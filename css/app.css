@@ -1,0 +1,460 @@
+/* body { height: auto; width: 99%; font-size: 11px; background: #000000 url(../images/dark-metal.jpg) 50% 50% repeat; } */
+
+/*
+@font-face {
+  font-family:'TexGyreCursor';
+  src:url('../font/texgyrecursor-regular-webfont?v=3.0.1');
+  src:url('../font/texgyrecursor-regular-webfont.eot?#iefix&v=3.0.1') format('embedded-opentype'),
+  url('../font/texgyrecursor-regular-webfont.woff?v=3.0.1') format('woff'),
+  url('../font/texgyrecursor-regular-webfont.ttf?v=3.0.1') format('truetype');
+  font-weight:normal;
+  font-style:normal 
+}
+  
+@font-face {
+  font-family:'TexGyreCursor';
+  src:url('../font/texgyrecursor-bold-webfont.eot?v=3.0.1');
+  src:url('../font/texgyrecursor-bold-webfont.eot?#iefix&v=3.0.1') format('embedded-opentype'),
+  url('../font/texgyrecursor-bold-webfont.woff?v=3.0.1') format('woff'),
+  url('../font/texgyrecursor-bold-webfont.ttf?v=3.0.1') format('truetype');
+  font-weight:bold;
+  font-style:bold 
+}
+
+@font-face {
+  font-family:'TexGyreCursor';
+  src:url('../font/texgyrecursor-italic-webfont.eot?v=3.0.1');
+  src:url('../font/texgyrecursor-italic-webfont.eot?#iefix&v=3.0.1') format('embedded-opentype'),
+  url('../font/texgyrecursor-italic-webfont.woff?v=3.0.1') format('woff'),
+  url('../font/texgyrecursor-italic-webfont.ttf?v=3.0.1') format('truetype');
+  font-weight:italic;
+  font-style:italic 
+}
+*/
+
+.icon { height: 16px; width: 16px; text-align: center }
+
+.white { color: #ccc }
+
+.gold   { color: gold }
+
+.bottom { float: bottom }
+
+.app a:hover { cursor: pointer }
+
+.app .out a {
+	color: inherit;
+	text-decoration: underline;	
+}
+.app .nav { margin-bottom: 10px }
+
+.app .window { 
+	color: #ffffff;
+	position: fixed;
+	margin: 0px auto;
+}
+
+.app .window .handle { 
+	cursor: move;
+	background: url("/templates/yoo_drive/images/tools/button_default.png") repeat-x scroll 50% 0 rgba(0, 0, 0, 0.6) !important;
+	border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+    color: #8A8C8C;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.5);
+    width: 100%;
+    height: 18px;
+    position: absolute;
+    padding-right: 5px; 
+    top: 0px; 
+    clear: both;
+}
+
+.app .window .content { width: 100%; height: 98%; position: absolute; padding-right: 5px; top: 18px; background-color: black; color: #ccc; clear: both; }
+
+.app .out {
+	font-family: 'Lucida Console','Courier New', Courier;
+	height: 92%;
+	width: 98%; 
+	font-size: 13px; 
+	color: #e1e1e1; 
+	margin: 0px auto;
+	padding: 5px;
+	word-wrap: normal; 
+	white-space: pre-wrap;
+}
+
+.app .out .mxp-dropdown {
+    background-color: rgba(0, 0, 0, 1.0) !important;
+    background-position: 0 50% !important;
+    background-repeat: no-repeat !important;
+    border: 1px solid rgba(255, 255, 255, 0.3) !important;
+    border-radius: 2px 2px 2px 2px !important;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 1.0) inset !important;
+    margin: 0px;
+    padding: 2px;
+    list-style: none;
+}
+
+.app .out .mxp-dropdown a {
+	text-decoration: none;
+}
+
+.app .mxp-dropdown li:hover {
+	background-color: rgba(255, 235, 158, 0.3);
+}
+
+.app [class^="icon-"]:hover, .app li.macro-btn:hover {
+	cursor: pointer
+}
+
+.app .game-link, .app .tab-pane, .app .profile-link {
+	width:  96%;
+	padding-left: 6px;
+}
+
+.app .game-link-selected {
+	background-color: rgba(255, 255, 255, 0.3);
+}
+
+.app .gamepanel .scroll {
+	padding-left: 4px;
+}
+
+.app .kbutton {
+	margin-right: 4px;
+}
+
+.app ul.macro-btns {
+	width: 100%;
+	margin-top: 10px;
+}
+
+.app li.macro-btn {
+	max-width: 60px;
+	padding-left: 6px;
+	padding-right: 6px;
+	margin-left: 6px;
+	text-align: center;
+	display: inline-block;
+}
+
+.app .ui-icon-gripsmall-diagonal-se {
+	opacity: 0.6	
+}
+
+.ui-dialog .ui-dialog-title { margin: 0.1em 16px 0.1em 0; position: relative; top: -4 }
+
+.hidden { display: none }
+
+.bg { width: 100%; text-align: center; position: relative; z-index: 0; opacity: 0.5; pointer-events: none; }
+
+.bg-image {
+	-moz-user-select: none;
+	-webkit-user-select: none;
+	user-select: none;
+}
+
+#toolbar-window { padding-top: 2px; position: absolute; z-index: 1; top: 5; left: 5; cursor: move; height: 32 } 
+
+#toolbar-window button { height: 24px; font-size: 10.5px; margin: 2px 5px 0px 0px }
+
+.ui-dialog .ui-dialog-titlebar { height: 8px }
+
+.bare .ui-dialog-titlebar { display: none } 
+
+.ui-left { float: left }
+
+.ui-right { float: right }
+
+.ui-icon-wrench { margin-top: 6px; padding-right: 5px }
+
+.icon { cursor: pointer }
+
+.ui-press { cursor: pointer }
+
+.ui-move { cursor: move }
+ 
+#promo { position: absolute; width: 100%; top: 95% }
+
+
+
+.tooltip {
+	font-family: "OpenSansLight",Arial,Helvetica,sans-serif;
+}
+
+.app .send { 
+	position: absolute; bottom: 11px; left: 5px; width: 96%; height: 20px; margin-top: 4px; 
+	background-color: rgba(0, 0, 0, 0.2);
+    background-position: 0 50%;
+    background-repeat: no-repeat;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 2px 2px 2px 2px;
+    box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2) inset;
+    color: #eee;
+ 	font-family: "OpenSansLight",Arial,Helvetica,sans-serif;
+ 	padding-left: 4px; 
+}
+
+.app .send:focus { 
+   border-color: rgba(255, 255, 255, 0.5);
+   box-shadow: 0 6px 6px rgba(255, 255, 255, 0.1) inset, 0 0 10px rgba(242, 217, 56, 0.6);
+   outline: 0 none;
+}
+
+.app .game-thumb {
+	width: 60px;
+}
+
+.app .gamelist {
+	height: 96%;
+}
+
+.minibar-wrapper { position: absolute; bottom: 3; left: 5; height: 7; width: 96% }
+
+.minibar-cont { float: left; width: 33.33%; height: 7 }
+
+.minibar { width: 0; float: left; height: 7 }
+
+.mini-hpbar 		{ background: #cc3300 url('../images/group-healthbar.png') }
+.mini-manabar 	{ background: #3366cc url('../images/group-manabar.png')}
+.mini-movebar 	{ background: #009933 url('../images/group-movebar.png')}
+
+.app .chat-window { background-color: black; font-size: 12px; }
+
+.app .chat-tab { padding-left: 4px; }
+
+.app .chat-window .time {
+	position: relative;
+}
+
+.ui-tabs .ui-tabs-nav li a {
+	font-size: 9px;	
+}
+
+.guild-window { width: 320px; height: 500px; position: absolute; top: 50px; left: 905px }
+
+.grayscale {
+    filter: url("data:image/svg+xml;utf8,<svg xmlns=\'http://www.w3.org/2000/svg\'><filter id=\'grayscale\'><feColorMatrix type=\'matrix\' values=\'0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0.3333 0.3333 0.3333 0 0 0 0 0 1 0\'/></filter></svg>#grayscale"); /* Firefox 10+, Firefox on Android */
+    filter: gray; /* IE6-9 */
+    -webkit-filter: grayscale(100%); /* Chrome 19+, Safari 6+, Safari 6+ iOS */
+}
+ 
+.grayscale:hover {
+	filter: none;
+	-webkit-filter: grayscale(0);
+}
+
+.app .bar-window { position: fixed; background-color: transparent; cursor: move }
+
+.bar-window .status	{ position: relative; top: 10px; left: 0px }
+.bar-window .bars   { position: absolute; top: 11px; left: 0px }
+.bar-window .smoke 	{ position: absolute; top: 10px; left: 0px; overflow: hidden; height 0px; }
+
+.bar-window .bar-wrapper { position: absolute; width: 200px; left: 127px; top: 0px; }
+.bar-window .black { background-color: #111; float: right; clear: both; left: -5px; top: -6px }
+
+.bar-window .manabar { position: relative; width: 200px; height: 16px; top: 23px }
+.bar-window .movebar { position: relative; width: 204px; height: 16px; top: 28px }
+.bar-window .expbar  { position: relative; width: 200px; height: 16px; top: 50px }
+.bar-window .tarbar  { position: relative; width: 200px; height: 16px; top: 54px }
+
+.bar-window .now, .bar-window .label { 	color: white; font-size: 15px; font-weight: bold; height: 20px;
+		width: 50%; float: left; text-align: right; padding-right: 3px;
+		text-shadow: -1px -1px 0px #000, 1px -1px 0 #000, -1px 1px 0px #000, 1px 1px 0px #000; 
+		background-color: transparent;
+	}
+
+.bar-window .label { clear: both }
+
+.bar-window .max { color: beige; font-size: 13px; float: left;  text-align: left; padding-top: 2px }
+
+.bar-window .hp { font-size: 17px }
+.bar-window .maxhp { font-size: 15px; }
+
+.bar-window .hp-label { position: absolute; top: 64px; left: -10px; width: 120px }
+.bar-window .mana-label { position: absolute; top: 22px; left: 120px; width: 200px }
+.bar-window .moves-label { position: absolute; top: 42px; left: 120px; width: 200px }
+
+.bar-window .exp-label { position: absolute; top: 80px; left: 120px; width: 200px }
+.bar-window .tar-label { position: absolute; top: 100px; left: 120px; width: 200px }
+.bar-window .single-label { text-align: center; }
+
+.app .no-target { opacity: 0.4 }
+
+#dialog .login, #dialog .create { width: 80 }
+
+.build-window { position: absolute; top: 100; left: 600; width: 760px; height: 600px; z-index: 1 }
+
+.build { scrolling: none; overflow: hidden; border: none; width: 100%; height: 96%; float: bottom }
+
+#world-window { position: absolute; top: 100; left: 600; width: 920px; height: 640px; overflow: hidden; z-index: 1 }
+
+.world { scrolling: none; overflow: hidden; border: none; width: 100%; height: 99%; float: bottom; position: relative; left: -4px; top: -8px }
+
+.group-window 	{ width: 280px; height: 290px; padding: 4px; position: absolute; top: 50; left: 610; background-color: black; font-size: 10.5px; }
+
+.group-member, .group-member-placeholder	{ border:2px solid #000000;height: 82px; overflow: hidden; position: relative; padding: none; margin: none; border-bottom: 1px solid #444444 }
+.group-member-placeholder	{ border:2px dashed #555; }
+.group-icon		{ position: absolute; height: 82px; width: 82px }
+.group-name		{ position: absolute; left: 102px; top: 2px; width: 100% }
+.group-desc		{ position: absolute; left: 102px; top: 16px; width: 100%; opacity: 0.7 }
+.group-chat		{ position: absolute; left: 102px; top: 28px; width: 100%; opacity: 0.7 }
+.group-bar		{ height: 12px; width: 186px; overflow: hidden; opacity: 0.7 }
+.group-bars		{ position: absolute; left: 100px; top: 34px }
+
+.group-stats	{ position: absolute; left: 102px; top: 34px; width: 186px; text-align: center; text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000 }
+.group-stat		{ line-height: 0.9em }
+
+.group-hp { }
+.group-maxhp { }
+
+.char-icon { height: 40px; width: 40px }
+
+.select-char {
+	width: 100%;
+	border-spacing: 0px;
+}
+
+.select-char:hover {
+	cursor: pointer;
+}
+
+.select-char td {
+	padding: 0px;
+}
+
+/* audio player */
+
+#jp-container-1 {
+	position: absolute;
+	top: 5;
+	right: 5;
+	z-index: 1;
+}
+
+.jp-gui {
+	position:relative;
+	padding:18px;
+	width: 200px;
+	height: 40px;
+}
+.jp-gui.jp-no-volume {
+	width: 132px;
+}
+.jp-title {
+	position: absolute;
+	top: 4;
+	width: 98%;
+}
+.jp-gui ul {
+	margin:0;
+	padding:0;
+}
+.jp-gui ul li {
+	position:relative;
+	float:left;
+	list-style:none;
+	margin:2px;
+	padding:4px 0;
+	cursor:pointer;
+}
+.jp-gui ul li a {
+	margin:0 4px;
+}
+.jp-gui li.jp-repeat,
+.jp-gui li.jp-repeat-off {
+	position: absolute;
+	top: 22;
+	left: 192;
+}
+
+.jp-gui li.jp-play, .jp-gui li.jp-pause {
+	position: absolute;
+	top: 22;
+	left:  32;
+}
+
+.jp-gui li.jp-stop {
+	position: absolute;
+	top: 22;
+	left: 172;
+}
+
+.jp-gui li.jp-mute,
+.jp-gui li.jp-unmute {
+	position: absolute;
+	top: 45;
+	left: 38;
+}
+
+.jp-gui li.jp-volume-max {
+	position: absolute;
+	top: 45;
+	left: 148;
+}
+li.jp-pause,
+li.jp-repeat-off,
+li.jp-unmute,
+.jp-no-solution {
+	display: none;
+}
+.jp-progress-slider {
+	position: absolute;
+	top: 32;
+	left: 64;
+	height: 6px;
+	width: 100px;
+}
+.jp-progress-slider .ui-slider-handle {
+	cursor:pointer;
+	height: 12px;
+}
+.jp-volume-slider {
+	position: absolute;
+	top: 55;
+	left: 64;
+	width: 	80px;
+	height: 6px;
+}
+.jp-volume-slider .ui-slider-handle {
+	cursor:pointer;
+	height: 12px;
+}
+.jp-gui.jp-no-volume .jp-volume-slider {
+	display:none;
+}
+.jp-duration {
+	display:none;
+}
+.jp-current-time {
+	position:absolute;
+	top: 54px;
+	left: 180px;
+	font-size:0.8em;
+	cursor:default;
+}
+.jp-gui.jp-no-volume .jp-duration {
+	right:70px;
+}
+.jp-clearboth {
+	clear:both;
+}
+
+.jp-title select {
+	color: #ccc;
+	background-color: black;
+	border: none;
+	width: 200px;
+	font-size: 11px;
+	text-align: center;
+}
+
+a:focus {
+	background-color: none
+}
+
+.area-name {
+	font-family: Consolas,Lucida Console,Courier;
+	font-size: 9px; 	 	
+	fill: #0B93D5;
+}
