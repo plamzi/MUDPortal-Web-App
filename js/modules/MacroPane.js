@@ -2,12 +2,16 @@
 
 var MacroPane = function(o) {
 
+	if (Config.nomacros)
+		return;
+	
 	var id = "#macro-pane";
 	var socket = o.socket;
 	var host = socket.getHost();
 	var port = socket.getPort();
 	var G = user.pref.sitelist, P = user.pref.profiles, g, p, gMacros, pMacros;
-	var buttons;
+
+	var vars;
 	var first = 1;
 	
 	var init = function() {
@@ -47,7 +51,7 @@ var MacroPane = function(o) {
 		if (!buttons.length)
 			return;
 
-		var win = new Window().init({
+		var win = new Window({
 			id: id,
 			title: 'Quick Buttons',
 			closeable: 1,
@@ -75,12 +79,30 @@ var MacroPane = function(o) {
 		}
 	}
 	
+	var vars = function(msg) {
+		
+		for (var i = 0; i < buttons.length; i++) {
+			if (buttons[i][0][0] == '$' && buttons[i][2]) {
+				var re = new RegExp('\\'+buttons[i][0], 'g');
+				//console.log(re);
+				msg = msg.replace(re, buttons[i][1]);
+				console.log('MacroPane: var replacement: '+stringify(buttons[i]));
+				console.log(msg);
+			}
+		}
+		
+		return msg;
+	}
+	
 	var sub = function(msg) {
+
+		if (Config.nomacros)
+			return msg;
 		
 		for (var b = 0; b < buttons.length; b++) {
 			
 			var cmd = buttons[b][0], sub = buttons[b][1];
-			
+
 				if (buttons[b][2] && msg.has(cmd)) {	
 					
 					if (!sub.has('$')) {
@@ -96,18 +118,20 @@ var MacroPane = function(o) {
 						return msg;
 					}
 					
-					if (!msg.has(' '))
+					if (!sub.has(' '))
 						continue;
 
 					var arg = msg.split(' ');
 					
+					if (arg[0] != cmd)
+						continue;
+					
 					for (var i = 1; i < arg.length; i++) {
 						sub = sub.replace('$'+i, arg[i], 'g');
-						console.log(re);
 						console.log(sub);
 					}
 					
-					return sub;
+					return vars(sub);
 					
 				}
 			

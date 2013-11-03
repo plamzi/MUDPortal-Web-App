@@ -15,11 +15,11 @@ stringify = function(A) {
     return val;
 }
 
-Array.prototype.remove= function(){
-	var what, a= arguments, L= a.length, ax;
-	while(L && this.length){
+Array.prototype.remove = function() {
+	var what, a = arguments, L = a.length, ax;
+	while (L && this.length) {
 		what= a[--L];
-		while((ax= this.indexOf(what))!= -1){
+		while((ax = this.indexOf(what)) != -1){
 			this.splice(ax, 1);
 		}
 	}
@@ -47,6 +47,19 @@ Array.prototype.index = function(key1, val1, key2, val2) {
 	return -1;
 }
 
+Array.prototype.fetch = function(key1, val1, key2) {
+
+	if (!this.length || !this[0][key1]) 
+		return null;
+	
+	for (var i = 0; i < this.length; i++) {
+		if (this[i][key1] == val1)
+			return this[i][key2];
+	}
+	
+	return null;
+}
+
 Array.prototype.has = function(v) {
 	return (this.indexOf(v) != -1);
 }
@@ -58,6 +71,25 @@ Array.prototype.not = function(key1, val1) {
 		if (this[i] != val1)
 			return this[i];
 	return null;
+}
+
+if (!Array.prototype.filter) {
+  Array.prototype.filter = function(fun /*, thisp*/) {
+    var len = this.length;
+    if (typeof fun != "function")
+      throw new TypeError();
+
+    var res = new Array();
+    var thisp = arguments[1];
+    for (var i = 0; i < len; i++) {
+      if (i in this) {
+        var val = this[i]; // in case fun mutates this
+        if (fun.call(thisp, val, i, this))
+          res.push(val);
+      }
+    }
+    return res;
+  };
 }
 
 String.prototype.trimm = function () { return this.replace(/^\s\s*/, '').replace(/\s\s*$/, '') }
@@ -96,4 +128,78 @@ jQuery.fn.center = function () {
     this.css("top", Math.max(0, (j(window).height() - j(this).height()) / 2));
     this.css("left", Math.max(0, (j(window).width() - j(this).width()) / 2));
     return this;
+}
+
+var multiprocess = function(cb)  {
+	var i = 0, busy = 0, done = 0;
+	var processor = setInterval(function() {
+		if (!busy) {  
+			busy = 1;
+				done = cb.call();
+					if (done)
+						clearInterval(processor);
+			busy = 0;
+		}
+	}, 100);
+}
+
+function glow(url) {
+	
+	var stdDeviation = 2,
+	rgb = "#000",
+	colorMatrix = "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0";
+	 
+	if (!arguments.length) {
+	url = "glow";
+	}
+	 
+	function my() {
+	 
+	var defs = this.append("defs");
+	 
+	var filter = defs.append("filter")
+	.attr("id", url)
+	.attr("x", "-20%")
+	.attr("y", "-20%")
+	.attr("width", "140%")
+	.attr("height", "140%")
+	.call(function() {
+	this.append("feColorMatrix")
+	.attr("type", "matrix")
+	.attr("values", colorMatrix);
+	this.append("feGaussianBlur")
+	// .attr("in", "SourceGraphics")
+	.attr("stdDeviation", stdDeviation)
+	.attr("result", "coloredBlur");
+	});
+	 
+	filter.append("feMerge")
+	.call(function() {
+	this.append("feMergeNode")
+	.attr("in", "coloredBlur");
+	this.append("feMergeNode")
+	.attr("in", "SourceGraphic");
+	});
+	}
+	 
+	my.rgb = function(value) {
+	if (!arguments.length) return color;
+	rgb = value;
+	color = d3.rgb(value);
+	var matrix = "0 0 0 red 0 0 0 0 0 green 0 0 0 0 blue 0 0 0 1 0";
+	colorMatrix = matrix
+	.replace("red", color.r)
+	.replace("green", color.g)
+	.replace("blue", color.b);
+	 
+	return my;
+	};
+	 
+	my.stdDeviation = function(value) {
+	if (!arguments.length) return stdDeviation;
+	stdDeviation = value;
+	return my;
+	};
+	 
+	return my;
 }

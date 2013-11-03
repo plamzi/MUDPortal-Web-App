@@ -1,11 +1,10 @@
 var Window = function(o) {
 	
 	var id, h, position, width, height, maximized, opt;
+	var view_id = Config.view;
 
 	var button = function(o) {
-		j(id + ' .toolbar').append('<i class="icon '+o.icon+' ui-right" \
-		style="margin-right: 6px; position: relative; top: -18px; z-index: 1" \
-		title="'+o.title+'"></i>');
+		j(id + ' .toolbar').append('<i class="icon '+o.icon+'" title="'+o.title+'"></i>');
 		j(id + ' .'+o.icon).click(o.click); 
 	}
 	
@@ -18,6 +17,8 @@ var Window = function(o) {
 		opt = o;
 		id = o.id;
 		
+		console.log('Window.js init() '+id);
+		
 		j('.app').prepend('\
 			<div id="'+o.id.split('#')[1]+'" class="window '+(o['class']||'')+'" >\
 				<div class="handle toolbar">\
@@ -29,8 +30,10 @@ var Window = function(o) {
 		
 		title(o.title||'');
 		
-		if (o.css)
-			j(id).css(o.css);
+		/* attempt to restore window position and size */
+		var default_pos = getpos(o);
+		j(id).css(o.css);
+		
 		
 		if (o.transparent) {
 			j(id + ' .toolbar').hide();
@@ -45,9 +48,10 @@ var Window = function(o) {
 			button({
 				icon: 'icon-remove',
 				title: 'Close this window.',
-				click: function() { 
+				click: function() {
+					if (o.onClose)
+						o.onClose.call();
 					j(id).remove();
-					j('.window:first').click();
 				}
 			});
 		}
@@ -72,7 +76,6 @@ var Window = function(o) {
 			j(id + ' .icon-columns').hide();
 
 			j(window).resize(function() {
-				j(id).center();
 				if (maximized)
 					maximize();
 			});
@@ -86,6 +89,7 @@ var Window = function(o) {
 				stop: function(e, u) {
 					j(id + ' .nice').getNiceScroll().resize();
 					j('.nicescroll-rails').css('z-index', j(id).css('z-index'));
+					savepos();
 				}
 			})
 			.css({
@@ -104,6 +108,7 @@ var Window = function(o) {
 				stop: function(e, u) { 	
 					j(id + ' .nice').getNiceScroll().resize();
 					j('.nicescroll-rails').css('z-index', j(id).css('z-index'));
+					savepos();
 					if (o.onResize)
 						o.onResize.call();
 				}
@@ -111,6 +116,13 @@ var Window = function(o) {
 		}
 			
 		j(id + ' .ui-resizable-handle').css('z-index', j(id).css('z-index'));
+		
+		if (o.id == '#scroll-view' && default_pos) {
+			if (Config.Device.lowres)
+				win.maximize();
+			else
+				j(id).center();
+		}
 	}
 	
 	var maximize = function() {
@@ -150,12 +162,15 @@ var Window = function(o) {
 	}
 	
 	var front = function() {
-		
+
+		console.log('Window.front: ' + id);
 		if (j(id).hasClass('nofront'))
 			return;
 		
-		console.log('front: ' + id);
-		var maxZ = 0;
+		var myZ = parseInt(j(id).css('z-index'));
+		var maxZ = myZ;
+		if (!myZ)
+			maxZ = myZ = 0;
 		
 		j(id).siblings().each(function() {
 			
@@ -165,13 +180,82 @@ var Window = function(o) {
 			if (parseInt(j(this).css('z-index')) > maxZ)
 				maxZ = parseInt(j(this).css('z-index'));
 			
-			if (this != j(id) && !j(this).hasClass('nofade'))
+			if (!j(this).hasClass('nofade'))
 				j(this).css('opacity', '0.3');
 		});
 		
 		j(id).css('opacity', '1');
-		j(id).css('z-index', ++maxZ);
-		j('#header').css('opacity', '0.4');
+		
+		if (maxZ > myZ) {
+			j(id).css('z-index', ++maxZ);
+			savepos();
+			console.log('Window.front(ed): ' + id);
+		}
+	}
+	
+	var savepos = function() {
+		
+		if (!user.id || !Config.host)
+			return;
+			
+		if (!user.pref.win)
+			user.pref.win = {};
+		
+		if (!user.pref.win[view_id])
+			user.pref.win[view_id] = {};
+		
+		user.pref.win[view_id][id] = {
+			offset: j(id).offset(),
+			width: j(id).width(),
+			height: j(id).height(),
+			zIndex: parseInt(j(id).css('z-index'))
+		};
+		
+		//console.log('Saving window position: '+id);
+		j.post('?option=com_portal&task=set_pref', { pref: stringify(user.pref) });	
+	}
+	
+	var getpos = function(o) {
+
+		//console.log('Restoring saved position: '+id);
+		
+		if (!user.id || !user.pref.win || !Config.host)
+			return 1;
+		
+		if (!user.pref.win[view_id] || !user.pref.win[view_id][id])
+			return 1;
+		
+		var prefs = user.pref.win;
+		
+		while (Object.keys(prefs).length > 3) {
+			console.log('Trimming window pref length: '+Object.keys(prefs).length);
+			var i = 0;
+			for (var p in prefs) {
+				if (!i) {
+					delete prefs[p];
+					i++;
+				}
+			}
+		}
+
+		//console.log('Window pref length: '+Object.keys(prefs).length);
+		
+		if (!user.pref.win[view_id])
+			return 1;
+			
+		var pref = user.pref.win[view_id][id];
+		 
+		if (!o.css)
+			o.css = {};
+			
+		o.css.left = (pref.offset.left < 0)?0:pref.offset.left;
+		o.css.top = (pref.offset.top < 0)?0:pref.offset.top;
+		o.css.width = pref.width;
+		o.css.height = pref.height;
+		if (pref.zIndex)
+			o.css.zIndex = pref.zIndex;
+		
+		return 0;
 	}
 	
 	if (o)

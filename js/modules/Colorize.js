@@ -1,8 +1,7 @@
 /*
- Example of a simple module that supports ANSI 16-color codes and XTERM256 colors into span tags.
- Listens for the 'before_display' event, which lets you modify incoming data from
- the server that is about to be displayed, i. e. after other processing (such as out-of-band)
- data has already taken place.
+ * Colorize.js is always included in the app page so you don't need to invoke it manually.
+ * It is used internally by other modules, such as ScrollView.js
+ * Adds ANSI 16-color codes and XTERM256 colors using span tags
 */
 
 var Colorize = function (o) {
@@ -91,6 +90,13 @@ var Colorize = function (o) {
 	var colorize = function(t) {
 		
 		//console.log('Colorize received: '+t);
+		
+		if (t.has('[7m')) {
+			//console.log("before: "+t);
+			t = t.replace(/(\033\[.*?)3([0-9])(.*?m)\033\[7m/g, '$14$2$3');
+			//console.log("after: "+t);
+		}
+		
 		var m = t.match(/\033\[[0-9;]+?m/g);
 		//console.log(m);
 		
@@ -100,22 +106,38 @@ var Colorize = function (o) {
 			var v = '', c = m[i].split('[')[1].split('m')[0].split(';');
 			var reset = 0, color = '', bgcolor = '', bold = '', italic = '';
 			
-			//console.log(m[i]);
-			
 			for (var a = 0; a < c.length; a++) {
-				if (!a && c[a] == '38') {
-					color = ' color:'+colors256[parseInt(c[2])]+';';
+				if (c[a] == '1') {
+					bold = 1;
 					break;
 				}
 				else
-				if (!a && c[a] == '48') {
-					bgcolor = ' background-color:'+colors256[parseInt(c[2])]+';';
-					break;
+				if (c[a] == '3')
+					bold = ' font-style: italic;';
+				else
+				if (c[a] == '7')
+					flip = 1;
+				else
+					bold = '';
+			}
+			
+			for (var a = 0; a < c.length; a++) {
+				if (!a && c[1] && c[1] == '5') {
+					if (c[a] == '38') {
+						color = ' color:'+colors256[parseInt(c[2])]+';';
+						break;
+					}
+					else
+					if (c[a] == '48') {
+						bgcolor = ' background-color:'+colors256[parseInt(c[2])]+';';
+						break;
+					}
 				}
 				else
 				if (ansi[c[a]]) {
-					if (bold)
+					if (bold) {
 						color = ' color:'+ansi['1;'+c[a]]+';';
+					}
 					else
 						color = ' color:'+ansi[c[a]]+';';
 				}
@@ -126,14 +148,6 @@ var Colorize = function (o) {
 					else
 						bgcolor = ' background-color:'+bgansi[c[a]]+';';
 				}
-				else
-				if (c[a] == '1')
-					bold = 1;
-				else
-				if (c[a] == '3')
-					bold = ' font-style: italic;';
-				else
-					bold = '';
 			}
 			
 			if (c.has('0') || color || bgcolor)
@@ -171,6 +185,3 @@ var Colorize = function (o) {
 	}
 	
 }
-
-//var colorize = new Colorize();
-//Event.listen('before_display', colorize.ansi8);

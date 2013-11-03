@@ -1,15 +1,17 @@
 /* Module for handling triggers on a socket. */
 
 var TriggerHappy = function(o) {
-
-	var socket = o.socket;
-	var host = socket.getHost();
-	var port = socket.getPort();
+	
+	var host = Config.host;
+	var port = Config.port;
 	var G = user.pref.sitelist, P = user.pref.profiles, g, p, gTriggers, pTriggers;
 	var triggers;
 	
 	var init = function() {
 
+		if (Config.notriggers) 
+			return Config.socket.echo('Triggers disabled by official code.');
+		
 		for (g in G) {
 			if (G[g].host == host) {
 				gTriggers = G[g].triggers;
@@ -33,10 +35,13 @@ var TriggerHappy = function(o) {
 		for (var t = 0; t < triggers.length; t++)
 			triggers[t][3] = triggers[t][0].replace(/\$[0-9]/g, '([A-Za-z0-9\-\'\"]+)');
 		
-		socket.echo('Loaded ' + triggers.length + ' triggers.');
+		Config.socket.echo('Loaded ' + triggers.length + ' triggers.');
 	}
 	
 	var respond = function(msg) {
+
+		if (Config.notriggers)
+			return msg;
 		
 		for (var t = 0; t < triggers.length; t++) {
 			
@@ -53,7 +58,7 @@ var TriggerHappy = function(o) {
 					cmd = cmd.replace('$'+n, res[n], 'g');
 			}
 			
-			socket.send(cmd);
+			Config.socket.send(cmd);
 		}
 		
 		return msg;

@@ -16,14 +16,16 @@ var ControlPanel = function () {
 		title: 'Game Center',
 		noresize: 1,
 		css: {
-			width: 680,
+			width: 700,
 			height: 500,
 			top: 160,
-			left: 100
+			left: 100,
+			zIndex: 1
 		}
 	});
 	
-	j(id + ' .content').append('<div style="padding: 0px 4px 0px 4px; width: 152px; border-right: 1px solid #222;" class="left gamelist nice"></div><div class="left gamepanel" style="width: 500px; height: 100%"></div>')
+	j(id + ' .content').append('<div style="padding: 0px 4px 0px 4px; width: 172px; border-right: 1px solid #222;" class="left gamelist nice"></div>\
+			<div class="left gamepanel" style="width: 500px; height: 100%"></div>')
 
 	var loadProfiles = function () {
 		j(id + ' .gamelist').append('<a class="my-profiles folder" data="profile-link"><i class="icon-folder-open-alt"></i> My Profiles</a><br>');
@@ -90,15 +92,16 @@ var ControlPanel = function () {
 		var t = j(id + ' .gamepanel');
 		var name = j(this).text();
 		
-		for (g = 0; g < d.length; g++)
-			if (j(this).attr('data') == g)
-				break;
+		var d = window.sitelist;
+			for (g = 0; g < d.length; g++)
+				if (j(this).attr('data') == g)
+					break;
 
 		t.attr('name', name);
 		t.attr('host', d[g].host);
 		t.attr('port', d[g].port);
 		//j('.gamepanel .tab-pane').getNiceScroll().remove();
-		var url = '/play?host=' + d[g].host + '&port=' + d[g].port + (profile?'&profile='+encodeURIComponent(name):'');
+		var url = '/play?host=' + d[g].host + '&port=' + d[g].port + '&name=' + name + (profile?'&profile='+encodeURIComponent(name):'');
 		url = '<a onclick="window.open(\''+url+'\', \'_self\')" class="button-primary">play</a>';
 		
 		if (profile)
@@ -109,8 +112,8 @@ var ControlPanel = function () {
 		t.append('<div class="left" style="padding: 4px 18px 0px 4px"><img class="game-thumb" src="'+d[g].img+'"></div><div class="left" style="padding-top: 4px">'+name+'<div style="height: 8px; clear: both"></div>'+url);
 			
 		t.append('<br>\
-		<a class="kbutton save right"><i class="icon-save"></i> save</a></div>\
-		<a class="kbutton clone right"><i class="icon-copy"></i> clone</a></div>\
+		<a class="kbutton save right tip" title="Save your preferences for this game or game profile."><i class="icon-save"></i> save</a></div>\
+		<a class="kbutton clone right tip" title="Create a profile for this game."><i class="icon-copy"></i> profile</a></div>\
 		<div style="clear: both"></div>');
 				
 		t.append('<ul class="nav nav-tabs">\
@@ -125,13 +128,12 @@ var ControlPanel = function () {
 		t.append('<div class="tab-content">\
 				<div class="tab-pane active" id="macros"></div>\
 				<div class="tab-pane" id="triggers"></div>\
-				<div class="tab-pane" id="settings"></div>\
+				<div class="tab-pane" id="settings"><div class="scroll"></div></div>\
 				</div>');
 		
-		j(id + ' .gamepanel #macros').append('Macros support arguments (wildcards) in the format $1, $2... $*.<br><br><a class="right kbutton macro-add"><i class="icon-plus"></i> new</a><div class="scroll"></div>');	
+		j(id + ' .gamepanel #macros').append('Macros support arguments (wildcards) in the format $1, $2... $*. The macro "$me -> Myname" will replace $me with Myname in any other macros or triggers.<br><br><a class="right kbutton macro-add"><i class="icon-plus"></i> new</a><div class="scroll"></div>');	
 		j(id + ' .gamepanel #triggers').append('Triggers support wildcards in the format $1, $2... $9.<br><br><a class="right kbutton trigger-add"><i class="icon-plus"></i> new</a><div class="scroll"></div>');	
-		
-			
+				
 		j('.gamepanel .scroll').niceScroll({ 
 			cursorborder: 'none', 
 			touchbehavior: 1
@@ -167,8 +169,16 @@ var ControlPanel = function () {
 			}
 		}
 		
-		var t = j(id + ' .gamepanel #settings');
-		t.append('Auto-load official plugins:  <i class="icon-check"></i>');
+		var t = j(id + ' .gamepanel #settings .scroll');
+		t.append('Auto-load official plugins:  <i class="icon-check" id="official"></i><br>');
+		t.append('Echo commands to main window:  <i class="icon-check" id="echo"></i><br>');
+		t.append('Keep last command in input:  <i class="icon-check" id="keepcom"></i><br>');
+		t.append('Enable MXP:  <i class="icon-check" id="mxp"></i><br>');
+		
+		if (G && G.settings)
+			for (var s = 0; s < G.settings.length; s++)
+				if (!G.settings[s].value)
+					j(id + ' #settings ' + '#'+G.settings[s].id).removeClass('icon-check').addClass('icon-unchecked');
 		
 		j('.gamelist a').removeClass('game-link-selected');
 		j(this).addClass('game-link-selected');
@@ -253,18 +263,26 @@ var ControlPanel = function () {
 		var profile = j(this).parent().attr('profile');
 		
 		if (!profile) {
+			
 			if (!pref.sitelist)
 				pref.sitelist = {};
-			
-			if (!pref.sitelist[name])
-				pref.sitelist[name] = {};
-	
-			pref.sitelist[name].macros = [];
-			pref.sitelist[name].triggers = [];
+
+			pref.sitelist[name] = {
+				macros: [],
+				triggers: [],
+				settings: []
+			};
 		}
 		else {
-			pref.profiles[name].macros = [];
-			pref.profiles[name].triggers = [];
+			
+			if (!pref.profiles)
+				pref.profiles = {};
+
+			pref.profiles[name] = {
+				macros: [],
+				triggers: [],
+				settings: []
+			};
 		}
 		
 		pref.sitelist[name].host = j(this).parent().attr('host');
@@ -280,14 +298,12 @@ var ControlPanel = function () {
 			d = j(this).find('.icon-star').length;
 			
 			if (profile) {
-				if (!pref.profiles[name].macros)
-					pref.profiles[name].macros = [];
 				pref.profiles[name].macros.push([a, b, c, d]);
 			}
 			else
 				pref.sitelist[name].macros.push([a, b, c, d]);
 		});
-		
+
 		j(id+' #triggers .scroll div').each(function() {
 			var a, b;
 			if (!(a = j(this).find('input:first').val()))
@@ -298,20 +314,36 @@ var ControlPanel = function () {
 			c = j(this).find('.icon-check').length;
 			
 			if (profile) {
-				if (!pref.profiles[name].triggers)
-					pref.profiles[name].triggers = [];
 				pref.profiles[name].triggers.push([a, b, c]);
 			}
 			else
 				pref.sitelist[name].triggers.push([a, b, c]);
 		});
+
+		j(id+' #settings .scroll i').each(function() {
+			
+			var a = {
+				id: j(this).attr('id'),
+				value: j(this).hasClass('icon-check')?1:0
+			};
+			
+			if (profile)
+				pref.profile[name].settings.push(a);
+			else
+				pref.sitelist[name].settings.push(a);
+		});
+			
+		j.post('?option=com_portal&task=set_pref', { pref: stringify(pref) }, function() {
+			new Modal({
+				title: 'Preferences Saved',
+				text: 'Your user preferences have been saved successfully.'
+			});
+		});
 		
-		j.post('?option=com_portal&task=set_pref', { pref: stringify(pref) });
-		
-		if (mp)
+		if (exists(mp) && mp.init)
 			mp.init();
 		
-		if (th)
+		if (exists(th) && th.init)
 			th.init();
 		
 		return false;

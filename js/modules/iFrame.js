@@ -14,7 +14,6 @@ var iFrame = function(o) {
 		if (j(o.id).length) {
 			url();
 			j(o.id).toggle();
-			front();
 			return;
 		}
 		
@@ -29,6 +28,9 @@ var iFrame = function(o) {
 					width: j(o.id + ' .content').width(),
 					height: j(o.id + ' .content').height()
 				})
+			},
+			onClose: function() {
+				clearInterval(refresh);
 			}
 		});
 		
@@ -43,19 +45,15 @@ var iFrame = function(o) {
 			cursorborder: 'none', 
 			touchbehavior: 1
 		});*/
-		
-		if (o.button && sv) {
-	        o.button.click = init;
-			sv.win.button(o.button);
-			o.button = null;
-		}
+
 		
 		if (o.refresh) {
 			clearInterval(refresh);
 			refresh = setInterval(url, o.refresh * 1000);
 		}
 		
-		win.front();
+		//win.front();
+		return false;
 	}
 	
 	var url = function() {
@@ -63,4 +61,10 @@ var iFrame = function(o) {
 	}
 	
 	init();
+	
+	if (o.button && sv) {
+        o.button.click = init;
+		sv.win.button(o.button);
+		o.button = null;
+	}
 }

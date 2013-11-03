@@ -42,7 +42,12 @@ var ChatterBox = function(o) {
 	for (var i = 0; i < o.tabs.length; i++) {
 		j(o.id + ' .chat-tabs').append('<li'+(i==0?' class="active"':'')+'><a class="kbutton" data-toggle="tab" href="#chat-tab-'+i+'">'+o.tabs[i].name+'</a></li>');
 		j(o.id + ' .tab-content').append('<div id="chat-tab-'+i+'" class="chat-tab tab-pane nice'+(i==0?' active':'')+'"></div>');
-		j('#chat-tab-'+i).niceScroll({ 
+
+		j('#chat-tab-'+i).css({
+			width: j(o.id).width() - 10,
+			height: j(o.id).height() - 80,
+		})
+		.niceScroll({ 
 			cursorborder: 'none', 
 			touchbehavior: 1
 		});
@@ -52,10 +57,6 @@ var ChatterBox = function(o) {
 	if (o.css)
 		j(o.id).css(o.css);
 
-	j('.chat-tab').css({
-		width: j(o.id).width() - 10,
-		height: j(o.id).height() - 80,
-	});
 	
 	var process = function(msg) {
 		
@@ -82,6 +83,8 @@ var ChatterBox = function(o) {
 
 				if (o.tabs[i].time)
 					text = '<span style="color: DarkGray; opacity: 0.6">'+j.format.date(new Date(), 'hh:mm:ss') + '</span> ' + text;
+				
+				text = text.replace(/([^"'])(http?:\/\/[^\s\x1b"']+)/g,'$1<a href="$2" target="_blank">$2</a>');
 				
 				j('#chat-tab-'+i).append(text+'<br>');
 				j('#chat-tab-'+i).scrollTop(j('#chat-tab-'+i)[0].scrollHeight);

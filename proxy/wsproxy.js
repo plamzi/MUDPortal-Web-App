@@ -1,5 +1,5 @@
 /*  
- 	Lightweight Websocket<->Telnet Proxy
+ 	Lightweight Websocket <-> Telnet Proxy
  	
  	Author: plamzi - bedlam@eyecandid.com 
  	MIT license
@@ -28,10 +28,16 @@ var u = require('util');
 var net = require('net');
 var http = require('http');
 var zlib = require('zlib');
+var ug = require("uglify-js");
 var ws = require('websocket').server;
+var fs = require('fs');
+
+var first = (typeof srv == 'undefined');
 
 srv = {
 
+	path: '/home/plamen/BEDLAM_CODER/src/',
+	
 	ws_port: 6200, /* this websocket proxy port */
 	
 	tn_host: "localhost", /* default telnet host */
@@ -64,6 +70,7 @@ srv = {
 		DO_MXP: 		new Buffer([ 255, 253, 91 ]),
 		START: 			new Buffer([ 255, 250, 201 ]),
 		STOP:   		new Buffer([ 255, 240 ]),
+		WILL_TTYPE:		new Buffer([ 255, 251, 24 ]),
 		TTYPE:  24,
 		MCCP2:	86,
 		MSDP:	69,
@@ -100,7 +107,7 @@ srv = {
 		s.on('error', function(err) { srv.closeSocket(s) });
 	
 		srv.initT(s);
-		srv.log(' (rs): new connection');
+		srv.log('(rs): new connection');
 	},
 
 	forward: function(s, d) {
@@ -126,9 +133,8 @@ srv = {
 		srv.log('active sockets: ' + server.sockets.length);
 	},
 
-	// Server boot
 	init: function() {
-
+		
 		server = {
 			sockets: []
 		};
@@ -139,7 +145,7 @@ srv = {
 		});
 
 		webserver.listen(srv.ws_port, function() {
-			srv.log('(ws) websocket server listening: port '+srv.ws_port);
+			srv.log('(ws) server listening: port ' + srv.ws_port);
 		});
 
 		wsServer = new ws({
@@ -150,21 +156,24 @@ srv = {
 
 			if (!srv.open || !srv.originAllowed(request.origin)) {
 				request.reject();
-				srv.log(' (ws): connection from ' + request.origin + ' rejected');
+				srv.log('(ws) connection from ' + request.origin + ' rejected');
 				return;
 			}
 
 			var s = request.accept(null, request.origin);
 
-			srv.log(' (ws): new connection');
+			srv.log('(ws) new connection');
 			server.sockets.push(s);
+			srv.log('(ws) connection count: '+server.sockets.length);
 	
 			s.on('message', function(msg) {
 				if (msg.type === 'utf8') {  
 					msg = msg.utf8Data;
-					//srv.log('(ws) msg (utf8): ' + msg);
 					if (!srv.parse(s, msg))
 						srv.forward(s, msg);
+				}
+				else {
+					srv.log('unrecognized msg type: ' + msg.type);
 				}
 			})
 			.on('close', function(reasonCode, description) {
@@ -178,6 +187,12 @@ srv = {
 			
 		});
 
+		fs.watch(srv.path+'wsproxy.js', function (e, f) {
+			if (srv['update-'+f]) 
+				clearTimeout(srv['update-'+f]);
+			srv['update-'+f] = setTimeout(function() { srv.loadF(f) }, 1000);
+		});
+		
 	}, 
  
 	parse: function(s, d) {
@@ -200,37 +215,43 @@ srv = {
 		
 		if (req.ttype) {
 			s.ttype = req.ttype;
-			srv.log('Client ttype port set to ' + s.ttype, s);
-		}
-		
-		if (req.mxp) {
-			s.mxp = req.mxp;
-			srv.log('Client wants MXP DO.', s);		
+			srv.log('Client ttype set to ' + s.ttype, s);
 		}
 		
 		if (req.mccp) {
 			s.mccp = req.mccp;
-			srv.log('Client wants MCCP.', s);		
+			//srv.log('Client wants MCCP.', s);		
 		}
 		
 		if (req.utf8) {
 			s.utf8 = req.utf8;
-			srv.log('Client wants UTF-8.', s);		
+			//srv.log('Client wants UTF-8.', s);		
 		}
 		
 		if (req.debug)
 			s.debug = req.debug;
-		
-		if (req.bedlam)
-			s.bedlam = 1;
+
 		
 		if (req.chat)
 			srv.chat(s, req);
-	
 		
-		if (req.connect)
+		if (req.connect) {
+			if (req.bedlam)
+				s.bedlam = 1;
 			srv.initT(s);
+		}
+		
+		if (req.bin && s.ts) {
+			try {
+				srv.log('Attempt binary send: '+req.bin);
+				s.ts.write(new Buffer(req.bin));
+			}
+			catch(ex) {
+				srv.log(ex);
+			}
 			
+		}
+		
 		return 1;
 	},
 	
@@ -258,18 +279,23 @@ srv = {
 		s.ts.write(new Buffer([p.ESC, '[7z']));	
 	},
 	
-	initT: function(so, d) {
+	initT: function(so) {
 		
 		var s = so;
 		var host = s.host||srv.tn_host;
 		var port = s.port||srv.tn_port;
 		
-		s.ts = null;
+		if (s.bedlam)
+			s.ttype = srv.ttype.bedlam.slice(0);
+		else
+			s.ttype = srv.ttype.portal.slice(0);
+		
+		s.ttype.push(s.remoteAddress);
+			
+		s.compressed = 0;
 		
 		s.ts = net.createConnection(port, host, function () {
-			srv.log('new connection routed to ' + host + ':' + port + ' for ' + s.remoteAddress);
-			if (d)
-				s.ts.write(d);
+			srv.log('new connection to ' + host + ':' + port + ' for ' + s.remoteAddress);
 		});
 		
 		s.ts
@@ -277,58 +303,27 @@ srv = {
 
 			var p = srv.prt;
 
-				
-				if (srv.gmcp.enabled) {
-							
-					s.ts.write(p.CAN_GMCP);
-					
-					if (s.bedlam)
-						for (var t = 0; t < srv.gmcp.bedlam.length; t++)
-							srv.sendGMCP(s, srv.gmcp.bedlam[t]);
-					else
-						for (var t = 0; t < srv.gmcp.portal.length; t++)
-							srv.sendGMCP(s, srv.gmcp.portal[t]);
-					
-					srv.sendGMCP(s, 'client_ip ' + s.remoteAddress);
-				}
-				
-				if (srv.ttype.enabled) {
-					
-					if (s.ttype)
-						srv.sendTTYPE(s, s.ttype);
-					
-					if (s.bedlam)
-						for (var t = 0; t < srv.ttype.bedlam.length; t++)
-							srv.sendTTYPE(s, srv.ttype.bedlam[t]);
-					else
-						for (var t = 0; t < srv.ttype.portal.length; t++)
-							srv.sendTTYPE(s, srv.ttype.portal[t]);
-					
-					srv.sendTTYPE(s, 'client_ip ' + s.remoteAddress);
-				}
-				
-				s.ts.write(p.DO_MSDP);
-				
-				if (s.mxp) {
-					setTimeout(function() {
-						s.ts.write(p.DO_MXP);
-					}, 1000)
-				}
-				
-				if (s.utf8) {
-					setTimeout(function() {
-						s.ts.write(p.WILL_CHARSET);
-					}, 1000);
-					setTimeout(function() {
-						s.ts.write(p.WILL_UTF8);
-					}, 1500);
-				}
-				
-				if (s.mccp) {
-					setTimeout(function() {
-						s.ts.write(p.CAN_MCCP);
-					}, 3000);
-				}
+			srv.log('telnet socket connected'); 
+			
+			s.ts.write(p.CAN_GMCP);
+			s.ts.write(p.DO_MSDP);
+
+			if (s.mccp) {
+				setTimeout(function() {
+					s.ts.write(p.CAN_MCCP);
+				}, 3000);
+			}
+			
+			if (s.host == 'mud.playbedlam.com') {
+				if (s.bedlam) 
+					for (var t = 0; t < srv.gmcp.bedlam.length; t++)
+						srv.sendGMCP(s, srv.gmcp.bedlam[t]);
+				else
+					for (var t = 0; t < srv.gmcp.portal.length; t++)
+						srv.sendGMCP(s, srv.gmcp.portal[t]);
+				srv.sendGMCP(s, 'client_ip ' + s.remoteAddress);
+			}
+		
 		})
 		.on("data", function (data) {
 			srv.sendClient(s, data);
@@ -341,6 +336,7 @@ srv = {
 		.on("close", function () { 
 			srv.log('telnet socket closed: '+s.remoteAddress);
 			srv.closeSocket(s);
+			//srv.initT(s);
 		})
 		.on("error", function (err) { 
 			s.write(new Buffer(err).toString('base64'));
@@ -351,22 +347,6 @@ srv = {
 	sendClient: function(s, data) {
 		
 		var p = srv.prt;
-		
-		if (s.mxp) {
-		  for (i = 0; i < data.length; i++)	
-			if (data[i] == p.IAC && data[i+2] == p.MXP) {
-				if (s.debug) {
-					srv.log('received IAC * MXP', s);
-				}
-				if (!s.sentMXP) {
-					s.ts.write(p.DO_MXP);
-					s.sentMXP = 1;
-				}
-			}
-			//if (data.toString().indexOf('<VERSION>') != -1) {
-				//srv.sendMXP(s, '<VERSION MXP=0.1 STYLE=1 CLIENT=mudportal.com VERSION=1.0>');
-			//}
-		}
 		
 		if (s.mccp) {
 		  for (i = 0; i < data.length; i++)	
@@ -381,7 +361,56 @@ srv = {
 					return;
 			}
 		}
-		 
+		
+		if (srv.ttype.enabled && s.ttype.length) {
+			
+			  for (i = 0; i < data.length; i++)	{
+					if (data[i] == p.IAC && data[i+1] == p.DO && data[i+2] == p.TTYPE) {
+						//s.ts.write(p.WILL_TTYPE);
+						srv.log('IAC DO TTYPE <- IAC WILL TTYPE');
+					}
+					else
+					if (data[i] == p.IAC && data[i+1] == p.SB && data[i+2] == p.TTYPE) {
+						srv.log('IAC SB TTYPE <- IAC NEXT TTYPE');
+						if (s.ttype.length) {
+							//srv.log('TTYPE: ' + s.ttype);
+							srv.sendTTYPE(s, s.ttype.shift());
+						}
+					}
+						
+			  }
+			  
+		}
+		
+		if (srv.gmcp.enabled && !s.gmcp_negotiated) {
+			
+			for (i = 0; i < data.length; i++)	{
+				
+				if (data[i] == p.IAC && data[i+1] == p.WILL && data[i+2] == p.GMCP) {
+					
+					if (s.bedlam) 
+						for (var t = 0; t < srv.gmcp.bedlam.length; t++)
+							srv.sendGMCP(s, srv.gmcp.bedlam[t]);
+					else
+						for (var t = 0; t < srv.gmcp.portal.length; t++)
+							srv.sendGMCP(s, srv.gmcp.portal[t]);
+					
+					srv.sendGMCP(s, 'client_ip ' + s.remoteAddress);
+					s.gmcp_negotiated = 1;
+				}
+			}	
+		}
+		
+		if (s.utf8 && !s.charset) {
+			for (i = 0; i < data.length; i++) {
+				if (data[i] == p.IAC && data[i+1] == p.DO && data[i+2] == p.CHARSET) {
+					s.ts.write(p.WILL_CHARSET);
+					s.ts.write(p.WILL_UTF8);
+					s.charset = 1;
+				}
+			}
+		}
+		
 		if (s.debug) {
 			srv.log('raw: '+data);
 		}
@@ -391,18 +420,27 @@ srv = {
 			return;
 		}
 			
-		/* Compression */
+		/* Client<->Proxy only Compression */
 		zlib.deflateRaw(data, function(err, buffer) {
 			if (!err) {
 				s.write(buffer.toString('base64'));
-				/*if (s.debug) {
-					srv.log('to client: ' + buffer.toString('base64'));
-					srv.log(JSON.stringify(buffer));
-				}*/
 			}
 			else 
 				srv.log('zlib error: ' + err);
 		});	
+	},
+	
+	loadF: function(f) {
+		try {
+			var fl = ug.minify(srv.path + f).code;
+			eval(fl + '');
+			srv.log('dyn.reload: ' + f); 
+		} 
+		catch(err) { 
+			srv.log(f); 
+			srv.log("Minify/load error: " + err);
+			return;
+		} 
 	},
 	
 	chat: function(s, req) {
@@ -464,24 +502,27 @@ srv = {
 	}
 }
 
-process.stdin.resume();
+if (first) {
 
-process
-.on( 'SIGINT', function () {
-	srv.log('Got SIGINT.');
-	srv.die();
-})
-.on('SIGABRT', function () {
-	srv.log('Got SIGABRT.');
-	srv.die();
-})
-.on('SIGSEGV', function () {
-	srv.log('Got SIGSEGV.');
-	srv.die(true);
-})
-.on('SIGTERM', function () {
-	srv.log('Got SIGTERM.');
-	srv.die();
-});
+	process.stdin.resume();
 
-srv.init();
+	process
+	.on( 'SIGINT', function () {
+		srv.log('Got SIGINT.');
+		srv.die();
+	})
+	.on('SIGABRT', function () {
+		srv.log('Got SIGABRT.');
+		srv.die();
+	})
+	.on('SIGSEGV', function () {
+		srv.log('Got SIGSEGV.');
+		srv.die(true);
+	})
+	.on('SIGTERM', function () {
+		srv.log('Got SIGTERM.');
+		srv.die();
+	});
+
+	srv.init();
+}

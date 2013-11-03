@@ -3,6 +3,9 @@ var ScrollView = function(o) {
 	var self = this, ws = {};
 	var o = o||{};
 	var id = '#scroll-view';
+	
+	o.local = (Config.getSetting('echo') == null || Config.getSetting('echo') == 1);	  
+	
 	var win = new Window({
 		id: id,
 		css: o.css,
@@ -10,12 +13,6 @@ var ScrollView = function(o) {
 		max: 1,
 		closeable: window.cp
 	});
-		
-	if (Config.Device.lowres) {
-		win.maximize();
-	}
-	else
-		j(id).center();
 	
 	j(id + ' .toolbar').append('<i class="icon icon-zoom-in right" style="margin-right: 5px; position: relative; top: -18px" title="Increase the font size."></i>');
 	j(id + ' .icon-zoom-in').click(function() {
@@ -35,7 +32,8 @@ var ScrollView = function(o) {
 	');
 	
 	j(id + ' .out').niceScroll({ 
-		cursorborder: 'none', 
+		cursorborder: 'none',
+		cursorwidth: 0, 
 		touchbehavior: 1
 	});
 	
@@ -45,22 +43,23 @@ var ScrollView = function(o) {
 		
 		var scroll = B?20000:o.scrollback;
 		var my = B?j(B):j(id + ' .out');
-	
+	/*
 		if (my[0].scrollHeight > scroll) {
-			console.log('Trimming scrollback history...');
-			while (my[0].scrollHeight > (scroll / 10)) {
-				my.find('.d:first').remove();
-			}
+			echo('Trimming scrollback history...');
+			j(id + ' .out').html(
+				j(id + ' .out').children().last().html()
+			);
 		}
-		
-		my.append('<span class="d">'+A+'</span>');
+		*/
+		my.append('<span>'+A+'</span>');
 		my.scrollTop(my[0].scrollHeight);
 
 	}
 	
 	var echo = function(msg) {
 		
-		if (!msg.length) return;
+		if (!msg.length) 
+			return;
 			
 		if (o.local) {
 			
@@ -100,15 +99,19 @@ var ScrollView = function(o) {
 			socket: ws
 		});
 		
-		Event.listen('before_send', mp.sub);
-		sv.echo('Activating macros.');
+		if (!Config.nomacros) {
+			Event.listen('before_send', mp.sub);
+			sv.echo('Activating macros.');
+		}
 		
 		var th = new TriggerHappy({
 			socket: ws
 		});
 		
-		Event.listen('after_display', th.respond);
-		sv.echo('Activating triggers.');
+		if (!Config.notriggers) {
+			Event.listen('after_display', th.respond);
+			sv.echo('Activating triggers.');
+		}
 	}
 		
 	return sv

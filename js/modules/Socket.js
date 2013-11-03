@@ -1,12 +1,35 @@
 var Socket = function(o) {
 	
-	var self, ws = {}, out = o.out, connected = 0;	
-	var proxy = param('ws')?('ws://'+param('ws')+'/'):'ws://www.bedlambrawl.com:6200/';
+	var self = this, ws = {}, out = o.out, connected = 0;	
+	var proxy = param('ws')?('ws://'+param('ws')+'/'):'ws://www.mudportal.com:6200/';
 	var host = o.host, port = o.port;
 	var buff = '';
 	var cmds = [], cmdi = 0;
 	var z_lib, z_stream, z_raw, utf8;
 	var colorize = new Colorize();
+	var keepcom = (Config.getSetting('keepcom') == null || Config.getSetting('keepcom') == 1);
+	
+	var prot = {
+		IS:			0,
+		REQUEST:	1,
+		ACCEPTED:	2,
+		REJECTED:	3,
+		TTYPE:  	24,		
+		ESC:		33,
+		CHARSET: 	42,
+		MCCP2:		86,
+		MSDP:		69,
+		MXP:		91,
+		WILL:		251,
+		ATCP:		200,
+		GMCP:		201,
+		SE:			240,
+		SB:			250,
+		WONT:		252,
+		DO:			253,
+		DONT:		254,
+		IAC:		255
+	};
 	
 	var onOpen = function(evt) {
 		
@@ -23,16 +46,18 @@ var Socket = function(o) {
 		};
 		
 		ws.send(stringify(opt));
-		
 		out.title(host + ':' + port);
+		
+		setInterval(function() {
+			ws.send('{ ping: 1 }');
+		}, 5000);
 	}
-	
-	if (param('ws'))
-		out.add('<br><span style="color: green;">Setting websocket proxy to '+param('ws')+'.</span><br>');
 	
 	var onClose = function(evt) {
 		ws.close();
 		connected = z_lib = 0;
+		if (z_stream)
+			ZLIB.inflateEnd(z_stream);
 		out.add('<br><span style="color: green;">Remote server has disconnected.</span><br>');
 		setTimeout(function() { connect() }, 3000);
 	}
@@ -49,6 +74,7 @@ var Socket = function(o) {
 			}
 			catch(ex) {
 				z_lib = 1;
+				console.log('Attempting zlib stream decompression (MCCP).');
 			}
 		}
 
@@ -70,7 +96,7 @@ var Socket = function(o) {
 			buff += reader.readToEnd();
 		}
 		
-		multiprocess();
+		process();
 	}
   
 	var	onError = function(evt) {
@@ -93,9 +119,9 @@ var Socket = function(o) {
 		cmds.push(msg);
 	}
 	
-	var sendoob = function(msg) { /* not working yet */
-		if (ws.send && connected)
-			ws.send(msg);
+	var sendBin = function(msg) {
+		console.log('Socket.sendBin: '+msg);
+		ws.send(stringify({ bin: msg }));
 	}
 	
 	var multiprocess = function()  {
@@ -119,17 +145,18 @@ var Socket = function(o) {
 		var B = buff;
 		buff = '';
 		B = prepare(B);
-		out.add(B);
+			out.add(B);
+		
 		Event.fire('after_display', B);
 	}
 	
 	var prepare = function(t) {
 		
-		if (console)
+		if (Config.debug && console)
 			console.log(t);
 		
-		/* prevent splitting ansi escape sequences */
-		if (t.match(/(\033|\033\[|\033[^mz>]+?[^mz>])$/)) {
+		/* prevent splitting ansi escape sequences & MXP */
+		if (t.match(/(\x1b|\x1b\[|\x1b[^mz>]+?[^mz>])$/)) {
 			console.log('Code split protection is waiting for more input.');
 			buff = t;
 			return '';
@@ -137,16 +164,22 @@ var Socket = function(o) {
 		
 		t = t.replace(/\n/g,'');
 		
-		t = Event.fire('before_process', t, self);
+		t = Event.fire('before_process', t, { send: send, sendBin: sendBin });
 		
-		if (t.has('ÿú* UTF-8ÿð')) {
+		/*
+		 if (Config.debug)
+			for (var i = 0; i < t.length; i++)
+				console.log(t[i] + ': ' + String.charCodeAt(t[i]));
+		 */
+		
+		if (!utf8 && t.has('ÿú* UTF-8ÿð')) {
 			utf8 = 1;
 			console.log('UTF-8 enabled.');
-			t = t.replace(/ÿú\* UTF\-8ÿð/, '');
+			t = t.replace(/ÿú.. UTF-8../, '');
 		}
 		
 		/* gmcp */
-		if (t.has('\xc9')) {
+		if (t.has('\xff\xfa\xc9')) {
 			var m = t.match(/\xff\xfa\xc9([\s\S]+?)\xff\xf0/gm);
 			if (m && m.length) {
 				for (i = 0; i < m.length; i++) {
@@ -163,7 +196,7 @@ var Socket = function(o) {
 		}
 		
 		/* atcp */					
-		if (t.has('\xc8')) {
+		if (t.has('\xff\xfa\xc8')) {
 			var m = t.match(/\xff\xfa\xc8([\s\S]+?)\xff\xf0/gm);
 			if (m && m.length) {
 				for (i = 0; i < m.length; i++) {
@@ -175,7 +208,7 @@ var Socket = function(o) {
 		}
 		
 		/* msdp */
-		if (t.has('\x45')) { 
+		if (t.has('\xff\xfa\x45')) { 
 			var m = t.match(/\xff\xfa\x45([\s\S]+?)\xff\xf0/gm);
 			if (m && m.length) {
 				for (i = 0; i < m.length; i++) {
@@ -194,37 +227,25 @@ var Socket = function(o) {
 		t = t.replace(/\x1b</g,'<');
 		
 		t = Event.fire('before_html', t, self);
-		
 		t = Event.fire('colorize', t, self);
 		
-		//[0;0;37mÿûV[0;0;37mÿþÉ[0;0;37mÿúÿð[0;0;37mÿý[0;0;37mÿý*[0;0;37mÿûE[0;0;37mÿûF[0;0;37mÿýÈ[0;0;37mÿûZ[0;0;37mÿý[[0;0;37mÿúÿð[0;0;37mÿúÿð[0;0;37mÿúÿð[0;0;37mÿúÿð[0;0;37                                    
-		
-		t = t.replace(/ÿþÉ/g,'');
-		t = t.replace(/ÿý./g,'');
-		t = t.replace(/ÿû[A-Z]/g,'');
-		
-		t = t.replace(/\xff./g,'');
-		t = t.replace(/\xf0/g,'');
-		t = t.replace(/\xfa/g,'');
-		t = t.replace(/\xfb/g,'');
-		t = t.replace(/\xc9/g,'');
-		t = t.replace(/\xc8/g,'');
-		t = t.replace(/\007/g,''); //bell
-		t = t.replace(/\001/g,''); //secure text entry
-		t = t.replace(/\033\[1;1/g,''); //clear screen
+		//console.log('before negotiation cleanup: '+t);
+		t = t.replace(/\xff\xfa..\xff\xf0/g,'');
+		t = t.replace(/\xff(\xfa|\xfb|\xfc|\xfd|\xfe)./g,'');
+		t = t.replace(/\x07/g,''); //bell
+		t = t.replace(/\xff.\x01/g,''); //don't echo
+		t = t.replace(/\x1b\[1;1/g,''); //clear screen
+		t = t.replace(/ÿ(ù|ï)/g,'');
+		t = t.replace(/\x1b\[[0-9][A-Z]/gi,''); //erase data, cursors
 
 		//t = t.replace(/\x1b/g,'');
-		//console.log('pre-EF\n'+t);
-		t = t.replace(/\*EF[^]+?V/g,'');
-		t = t.replace(/\*EFZ\[/g,'');
-		t = t.replace(/([^"'])(http?:\/\/[^\s\x1b"']+)/g,'$1<a href="$2" target="_blank">$2</a>');
+		t = t.replace(/([^"'])(http.*:\/\/[^\s\x1b"']+)/g,'$1<a href="$2" target="_blank">$2</a>');
 		
 		 /* orphaned escapes still possible during negotiation */
-		if (t.match(/^\033+$/))
+		if (t.match(/^\x1b+$/))
 			return '';
 		
 		t = t.replace(/\uFFFF/gi,''); /* utf-8 non-character */
-		
 		//console.log('before_display: '+t);
 		
 		t = Event.fire('before_display', t);
@@ -233,30 +254,34 @@ var Socket = function(o) {
 	}
 	
 	var connect = function() {
-		if (WebSocket) {
-			ws = new WebSocket(proxy);
-			o.ws = ws;
-			ws.onopen = function(e) { onOpen(e) };
-			ws.onclose = function(e) { onClose(e) };
-			ws.onmessage = function(e) { onMessage(e) };
-			ws.onerror = function(e) { onError(e) };
-		}
+		ws = new WebSocket(proxy);
+		ws.onopen = function(e) { onOpen(e) };
+		ws.onclose = function(e) { onClose(e) };
+		ws.onmessage = function(e) { onMessage(e) };
+		ws.onerror = function(e) { onError(e) };
 	}
 	
 	var echo = function(msg) {
 		out.echo(msg);
 	}
+
+	if (param('ws'))
+		out.add('<br><span style="color: green;">Setting websocket proxy to '+param('ws')+'.</span><br>');
 	
 	connect();
 	
 	if (Config.Device.touch) {
+		
 		j(out.id + ' .send').blur(function() {
 			if (j(this).val().length) {
 				var v = j(this).val();
 				send(v);
 				cmdi++;
 				//this.setSelectionRange(0, 9999);
-				this.select();
+				if (keepcom)
+					this.select();
+				else
+					j(this).val('');
 			}
 			else ws.send('\r\n');
 		});
@@ -278,7 +303,10 @@ var Socket = function(o) {
 				send(v);
 				cmdi++;
 				//this.setSelectionRange(0, 9999);
-				this.select();
+				if (keepcom)
+					this.select();
+				else
+					j(this).val('');
 			}
 			else ws.send('\r\n');
 			
@@ -303,13 +331,18 @@ var Socket = function(o) {
 		}
 	});
 	
-	return {
+	var self = {
 		send: send,
-		sendoob: sendoob,
+		sendBin: sendBin,
 		echo: echo,
 		setSelf: function(me) { self = me },
 		getHost: function() { return host },
 		getPort: function() { return port },
 		getProxy: function() { return proxy }
 	}
+	
+
+	Config.socket = self;
+	return self;
+	
 }
