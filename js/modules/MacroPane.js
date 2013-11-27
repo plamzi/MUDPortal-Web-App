@@ -7,8 +7,8 @@ var MacroPane = function(o) {
 	
 	var id = "#macro-pane";
 	var socket = o.socket;
-	var host = socket.getHost();
-	var port = socket.getPort();
+	var host = Config.host;
+	var port = Config.port;
 	var G = user.pref.sitelist, P = user.pref.profiles, g, p, gMacros, pMacros;
 
 	var vars;
@@ -23,7 +23,7 @@ var MacroPane = function(o) {
 			}
 		}
 		
-		if (P[param('profile')])
+		if (P && P[param('profile')])
 			pMacros = P[param('profile')].macros;
 		
 		buttons = [];
@@ -84,10 +84,10 @@ var MacroPane = function(o) {
 		for (var i = 0; i < buttons.length; i++) {
 			if (buttons[i][0][0] == '$' && buttons[i][2]) {
 				var re = new RegExp('\\'+buttons[i][0], 'g');
-				//console.log(re);
+				//log(re);
 				msg = msg.replace(re, buttons[i][1]);
-				console.log('MacroPane: var replacement: '+stringify(buttons[i]));
-				console.log(msg);
+				log('MacroPane: var replacement: '+stringify(buttons[i]));
+				log(msg);
 			}
 		}
 		

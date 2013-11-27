@@ -6,25 +6,12 @@
 
 var MXP = function () {
 	
-	var mxp = 0, elements = [], tried = 0;
+	var mxp = 0, elements = [];
 	
 	var process = function(t) { 	
 		
-		/*
-		if (!tried) {
-			Config.socket.sendBin([255, 253, 91]);
-			tried = 1;
-		} */
-		
-		if (!tried && (t.has('\xff\xfb\x5b') || Config.forcemxp)) { // IAC WILL MXP
-			console.log('Got IAC WILL MXP<--IAC DO MXP');
-			Config.socket.sendBin([255, 253, 91]);
-			t = t.replace(/\xff\xfb\x5b/, '');
-			mxp = 1, tried = 1;
-		}
-		
 		if (t.has('\xff\xfa\x5b\xff\xf0')) {
-			console.log('Got IAC SB MXP IAC SE-->BEGIN MXP');
+			log('Got IAC SB MXP IAC SE -> BEGIN MXP');
 			t = t.replace(/.\xff\xfa\x5b\xff\xf0/, '');
 			mxp = 1;
 		}
@@ -40,7 +27,7 @@ var MXP = function () {
 				for (var i = 1; i < m.length; i++)
 					elements.push(m[i].substring(10, m[i].length-1).split(' '));
 			}
-			console.log(elements);
+			log(elements);
 			t = t.replace(/<!element[^]+>/gi, '');
 		}
 		
@@ -61,16 +48,19 @@ var MXP = function () {
 		/* <send> simple & unichoice tag: turn into links, escape &lt, &gt */
 		t = t.replace(/<send(|[^]+?)>([^]+?)<\/send>/gi, '\x1b<a class="mxp"$1\x1b>$2\x1b<\/a\x1b>');
 		
+		t = t.replace(/<font color=([^]+?)>/gi, '\x1b<span style="color:$1"\x1b>');
+		
+		t = t.replace(/<\/font>/gi, '\x1b</span\x1b>');
+		
 		/* open tags */
 		t = t.replace(/<([\/BRIUS]{1,3})>/gi, '\x1b<$1\x1b>');
 
 		t = t.replace(/\x1b\[[0-9]+?z/g, '\x1b'); /* strip enclosures, for now */
-		//t = t.replace(/\x1b\[7/g, ''); /* strip enclosures, for now */
 		
-		/*
-		if (Config.debug) {
-			t += '<buy>bread</buy>';
-		}*/
+		t = t.replace(/\x1b\[7/g, ''); /* strip enclosures, for now */
+		
+		//if (Config.debug)
+			//t += '<buy>bread</buy>';
 		
 		/* declared elements */
 		for (var i = 0; i < elements.length; i++) {
@@ -91,7 +81,7 @@ var MXP = function () {
 		
 		var o = o.split('|');
 		
-		console.log(o);
+		log(o);
 		
 		if (o.length == 1)
 			return;
@@ -155,6 +145,6 @@ var MXP = function () {
 }
 
 if (Config.getSetting('mxp') == null || Config.getSetting('mxp') == 1)
-	Event.listen('before_process', new MXP().process);
+	Event.listen('internal_mxp', new MXP().process);
 else
-	console.log('MXP disabled in profile or game preferences.');
+	log('MXP disabled in profile or game preferences.');

@@ -4,7 +4,7 @@ var TriggerHappy = function(o) {
 	
 	var host = Config.host;
 	var port = Config.port;
-	var G = user.pref.sitelist, P = user.pref.profiles, g, p, gTriggers, pTriggers;
+	var G = user.pref.sitelist, P = user.pref.profiles, g, p, gTriggers = [], pTriggers = [];
 	var triggers;
 	
 	var init = function() {
@@ -26,16 +26,23 @@ var TriggerHappy = function(o) {
 		
 		if (gTriggers)
 			for (var n = 0; n < gTriggers.length; n++)
-				triggers.push(gTriggers[n]);
+				if (gTriggers[n][2])
+					triggers.push(gTriggers[n]);
 
 		if (pTriggers)
 			for (var n = 0; n < pTriggers.length; n++)
-				triggers.push(pTriggers[n]);
+				if (pTriggers[n][2])
+					triggers.push(pTriggers[n]);
 		
-		for (var t = 0; t < triggers.length; t++)
-			triggers[t][3] = triggers[t][0].replace(/\$[0-9]/g, '([A-Za-z0-9\-\'\"]+)');
+		for (var t = 0; t < triggers.length; t++) {
+			try {
+				triggers[t][3] = new RegExp(triggers[t][0].replace(/\$[0-9]/g, '([A-Za-z0-9\-\'\"]+)'), 'g');
+			} catch(ex) {
+				log(ex);
+			}
+		}
 		
-		Config.socket.echo('Loaded ' + triggers.length + ' triggers.');
+		Config.socket.echo('Loaded ' + triggers.length + '/' + (gTriggers.length + pTriggers.length) + ' triggers.');
 	}
 	
 	var respond = function(msg) {
@@ -45,8 +52,7 @@ var TriggerHappy = function(o) {
 		
 		for (var t = 0; t < triggers.length; t++) {
 			
-			var re = new RegExp(triggers[t][3], 'g');
-			var res = re.exec(msg);
+			var res = triggers[t][3].exec(msg);
 			
 			if (!res || !res.length)
 				continue;

@@ -1,6 +1,6 @@
 var Config = {
 	
-	debug: param('debug'),
+	debug: window.location.search.has('debug')||0,
 	
 	host: param('host'),
 	
@@ -10,13 +10,21 @@ var Config = {
 	
 	profile: param('profile'),
 	
-	width: param('width')?param('width'):860,
+	width: param('width')||860,
 			
-	height: param('height')?param('height'):540,
+	height: param('height')||540,
+	
+	clean: window.location.search.has('clean')||0,
+	
+	solo: window.location.search.has('solo')||0,
+	
+	nocenter: window.location.search.has('nocenter')||0,
+	
+	collapse: [],
+	
+	dev: window.location.search.has('dev')||0,
 	
 	view: param('host') + ':' + param('port') + ':' + window.screen.width + 'x' + window.screen.height,
-	
-	clean: param('clean'),
 	
 	Device: {
 		touch: ('ontouchstart' in window || navigator.msMaxTouchPoints),
@@ -33,10 +41,10 @@ var Config = {
 			return s;
 		
 		if (user && user.pref && user.pref.sitelist && user.pref.sitelist[param('name')])
-			s.push(user.pref.sitelist[param('name')].settings);
+			j.extend(true, s, user.pref.sitelist[param('name')].settings);
 		
 		if (param('profile') && user && user.pref && user.pref.profiles && user.pref.profiles[param('profile')] && user.pref.profiles[param('profile')].settings)
-			s.push(user.pref.profiles[param('profile')].settings);
+			j.extend(true, s, user.pref.profiles[param('profile')].settings);
 		
 		return s;
 		
@@ -48,12 +56,12 @@ var Config = {
 			return null;
 
 		for (var i = 0; i < Config.settings.length; i++)
-			if (Config.settings.id == A)
-				return Config.settings.value;
+			if (Config.settings[i].id == A)
+				return Config.settings[i].value;
 		
 		return null;
 	}
 }
 
-if (Config.debug)
-	console.log(Config);
+log(Config);
+log(stringify(Config.settings));

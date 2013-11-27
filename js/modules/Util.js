@@ -15,6 +15,14 @@ stringify = function(A) {
     return val;
 }
 
+function html_encode(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') ;
+}
+
+function html_decode(str) {
+    return str.replace(/&amp\;/g,'&').replace(/&lt\;/g,'<').replace(/&gt\;/g,'>') ;
+}
+
 Array.prototype.remove = function() {
 	var what, a = arguments, L = a.length, ax;
 	while (L && this.length) {
@@ -73,6 +81,24 @@ Array.prototype.not = function(key1, val1) {
 	return null;
 }
 
+Array.prototype.unique = function() {
+    return this.reduce(function(p, c) {
+        if (p.indexOf(c) < 0) 
+        	p.push(c);
+        return p;
+    }, []);
+}
+
+Array.prototype.add = function(A) {
+	if (this.indexOf(A) == -1)
+		this.push(A);
+}
+
+Array.prototype.remove = function(A) {
+	if (this.indexOf(A) != -1)
+		this.splice(this.indexOf(A), 1);
+}
+
 if (!Array.prototype.filter) {
   Array.prototype.filter = function(fun /*, thisp*/) {
     var len = this.length;
@@ -110,6 +136,11 @@ var param = function(A) {
 		else return decodeURIComponent(results[1]);
 }
 
+var log = function(A) {
+	if (Config.debug)
+		console.log(A)
+}
+
 function exists(A) { return (( typeof A != 'undefined' )?A:null) };
 	
 function addCommas(nStr) {
@@ -125,8 +156,8 @@ while (rgx.test(x1)) {
 }
 
 jQuery.fn.center = function () {
-    this.css("top", Math.max(0, (j(window).height() - j(this).height()) / 2));
-    this.css("left", Math.max(0, (j(window).width() - j(this).width()) / 2));
+    this.css("top", Math.max(0, (jQuery(window).height() - jQuery(this).height()) / 2));
+    this.css("left", Math.max(0, (jQuery(window).width() - jQuery(this).width()) / 2));
     return this;
 }
 

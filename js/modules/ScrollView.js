@@ -5,25 +5,32 @@ var ScrollView = function(o) {
 	var id = '#scroll-view';
 	
 	o.local = (Config.getSetting('echo') == null || Config.getSetting('echo') == 1);	  
+	o.echo = o.echo||1;
 	
 	var win = new Window({
 		id: id,
 		css: o.css,
 		'class': 'nofade',
 		max: 1,
-		closeable: window.cp
+		closeable: Config.ControlPanel
 	});
 	
 	j(id + ' .toolbar').append('<i class="icon icon-zoom-in right" style="margin-right: 5px; position: relative; top: -18px" title="Increase the font size."></i>');
 	j(id + ' .icon-zoom-in').click(function() {
 		var v = parseInt(j(id + ' .out').css('fontSize'));
-		j(id + ' .out').css({fontSize: ++v + 'px'});
+		j(id + ' .out').css({
+			fontSize: ++v + 'px',
+			lineHeight: (v+5) + 'px'
+		});
 	});
 	
 	j(id + ' .toolbar').append('<i class="icon icon-zoom-out right" style="margin-right: 5px; position: relative; top: -18px" title="Decrease the font size."></i>');
 	j(id + ' .icon-zoom-out').click(function() {
 		var v = parseInt(j(id + ' .out').css('fontSize'));
-		j(id + ' .out').css({fontSize: --v + 'px'});
+		j(id + ' .out').css({
+			fontSize: --v + 'px',
+			lineHeight: (v+5) + 'px'
+		});
 	});
 	
 	j(id + ' .content').append('\
@@ -37,20 +44,21 @@ var ScrollView = function(o) {
 		touchbehavior: 1
 	});
 	
-    Event.listen('colorize', new Colorize().process);
+	j(id).click(function() {
+		j(id + ' .send').focus();
+	});
+	
+    Event.listen('internal_colorize', new Colorize().process);
         
-	var add = function(A, B) {
+	var add = function(A) {
 		
-		var scroll = B?20000:o.scrollback;
-		var my = B?j(B):j(id + ' .out');
-	/*
-		if (my[0].scrollHeight > scroll) {
-			echo('Trimming scrollback history...');
-			j(id + ' .out').html(
-				j(id + ' .out').children().last().html()
-			);
-		}
-		*/
+		var my = j(id + ' .out');
+		/*
+		if (my[0].scrollHeight > o.scrollback) {
+			echo('Scrollback limit reached. Flushing scrollback history...');
+			j(id + ' .out').empty();
+		}*/
+		
 		my.append('<span>'+A+'</span>');
 		my.scrollTop(my[0].scrollHeight);
 
@@ -61,7 +69,7 @@ var ScrollView = function(o) {
 		if (!msg.length) 
 			return;
 			
-		if (o.local) {
+		if (o.local && o.echo) {
 			
 			msg = msg.replace(/>/g,'&gt;');
 			msg = msg.replace(/</g,'&lt;');
@@ -78,15 +86,18 @@ var ScrollView = function(o) {
 		}
 	}
 		
+	var echoOff = function() { o.echo = 0 }
+	var echoOn = function() { o.echo = 1 }
+	
 	var sv = {
 		add: add,
 		echo: echo,
+		echoOff: echoOff,
+		echoOn: echoOn,
 		title: title,
 		id: id,
 		win: win
 	}
-	
-	Event.fire('scrollview_ready', null, sv);
 
 	var ws = new Socket({
 		host: param('host'),
@@ -95,24 +106,28 @@ var ScrollView = function(o) {
 	});
 	
 	if (user.id) {
-		var mp = new MacroPane({
+		Config.MacroPane = new MacroPane({
 			socket: ws
 		});
 		
 		if (!Config.nomacros) {
-			Event.listen('before_send', mp.sub);
+			Event.listen('before_send', Config.MacroPane.sub);
 			sv.echo('Activating macros.');
 		}
 		
-		var th = new TriggerHappy({
+		Config.TriggerHappy = new TriggerHappy({
 			socket: ws
 		});
 		
 		if (!Config.notriggers) {
-			Event.listen('after_display', th.respond);
+			Event.listen('after_display', Config.TriggerHappy.respond);
 			sv.echo('Activating triggers.');
 		}
 	}
+	
+	Config.ScrollView = sv;
 		
+	Event.fire('scrollview_ready', null, sv);
+
 	return sv
 }

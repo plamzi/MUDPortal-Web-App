@@ -6,9 +6,9 @@ var JujuMapper = function(o) {
 		height: 2000
 	};
 	
-	o.loadURL = '/index.php?option=com_portal&task=get_map&host='+Config.host+'&port='+Config.port;
+	o.loadURL = o.loadURL||'/index.php?option=com_portal&task=get_map&host='+Config.host+'&port='+Config.port;
 	o.saveURL = '/index.php?option=com_portal&task=save_map&host='+Config.host+'&port='+Config.port;
-
+	
 	var map = {}, areas = {}, rooms = {}, exits = [], tags = [], selection = [];
 	var lns, rms, tgs;
 	var svg, c_map, ready = 0, at, prev, R;
@@ -155,8 +155,8 @@ var JujuMapper = function(o) {
 	    	moveKey(R, 'trans', 'R');
 	    	if (isNaN(R.z) || R.z == 'NaN')
 	    		R.z = 0;
-	    	if (R.road == 0)
-	    		delete R.road;
+	    	if (R.trans == 0)
+	    		delete R.trans;
     	}
     }
     
@@ -188,53 +188,56 @@ var JujuMapper = function(o) {
     	delete map.rni;
     }
 
-    
-    var jqxhr = j.getJSON(o.loadURL, function(d) {
-		try {
-		   
-			map = eval('('+d+')');
-			unpack();
-			
-			for (var i = 0; i < map.areas.length; i++) {
-				//map.areas[i].color = getZoneColor();
-			   	areas[map.areas[i].name] = map.areas[i];
-			}
-		   
-			console.log(areas);
-			var n = 0;
-			
-			for (var i in map.rooms) {
+    j.ajax({
+    	url: o.loadURL,
+    	async: true,
+    	cache: true,
+    	dataType: "json",
+    	success: function(d) {
+			try {
+			   
+				map = eval('('+d+')');
+				unpack();
 				
-			   map.rooms[i].x = parseInt(map.rooms[i].x);
-			   map.rooms[i].y = parseInt(map.rooms[i].y);
-			   map.rooms[i].z = parseInt(map.rooms[i].z);
+				for (var i = 0; i < map.areas.length; i++)
+				   	areas[map.areas[i].name] = map.areas[i];
 			   
-			   if (map.rooms[i].x > o.width)
-				   o.width = map.rooms[i].x + 100;
-			   
-			   if (map.rooms[i].y > o.height)
-				   o.height = map.rooms[i].y + 100;
-			   
-			   n++
-			}
-		   
-			j.extend(true, rooms, map.rooms);
-			console.log('Mapper.load completed: ' + n + ' rooms loaded from file.');
-			
-			init();
+				log(areas);
+				var n = 0;
+				
+				for (var i in map.rooms) {
+					
+					var r = map.rooms[i]; 
+					r.x = parseInt(r.x);
+					r.y = parseInt(r.y);
+					r.z = parseInt(r.z);
+				   
+					if (map.rooms[i].x > o.width)
+						o.width = map.rooms[i].x + 100;
+				   
+					if (map.rooms[i].y > o.height)
+						o.height = map.rooms[i].y + 100;
 
-			ready = 1;
-			
-			if (at)
-				go(at);
+				   n++;
+				}
+			   
+				j.extend(true, rooms, map.rooms);
+				log('Mapper.load completed: ' + n + ' rooms loaded from file.');
+				
+				init();
+				ready = 1;
+				if (at)
+					go(at);
+				
+			}
+			catch (ex) {
+				log(ex);
+			}
+		},
+		error: function(e) {
+			log( "Mapper: error loading world file: " + stringify(e));
 		}
-		catch (ex) {
-			console.log(ex);
-		}
-	})
-	.fail(function(e) {
-		console.log( "Mapper: error loading world file: " + stringify(e));
-	});
+    });
 
 	var save = function() {
 		j(id + ' .icon-save').replaceWith('<i class="icon icon-spinner spinner"></i>');
@@ -252,6 +255,8 @@ var JujuMapper = function(o) {
 	var seeall = function() {
 		if (!editing())
 			return 0;
+		if (o.seeall)
+			return 1;
 	    return (j(id + ' .reveal').hasClass("on"))
 	}
 	
@@ -300,7 +305,7 @@ var JujuMapper = function(o) {
 	
  	var init = function() {
 
-		console.log('Mapper.init');
+		log('Mapper.init');
 		
 		if (svg) {
 			svg.selectAll(".room, .line, .tag").remove();
@@ -311,31 +316,16 @@ var JujuMapper = function(o) {
 		var height = o.height * o.scale;
 		
 		svg = d3.select(o.container)
-			.append("svg")
+			.append("svg:svg")
 			.attr("width", width)
 			.attr("height", height)
 			.attr("transform", "scale("+o.scale+")")
             //.attr("preserveAspectRatio", "xMidYMid meet")
             .attr("id", "map");
-
-		/*viewport = svg.append("g").attr("id", "viewport")
+/*
+		viewport = svg.append("g").attr("id", "viewport")
         .attr("transform", "scale(4.0)")
-     	.attr("transform", "translate([0, 0]) scale(1.0)")
-        .call(d3.behavior.zoom()
-          	.scaleExtent([1, 1])
-            .scale(4)
-            .on("zoom", function() {
-            	var s = d3.event.scale,
-            	t = d3.event.translate;
-            	
-            	t[0] *= 2;
-            	t[1] *= 2;
-                	viewport.attr("s", s);
-                	viewport.attr("x", t[0]);
-                	viewport.attr("y", t[1]);
-                	viewport.attr("transform", "translate(" + t + ") scale(" + s + ")");
-            })
-         );
+     	.attr("transform", "translate([0, 0]) scale(1.0)");
 
 		
 		drag = d3.behavior.drag()
@@ -344,20 +334,22 @@ var JujuMapper = function(o) {
 	    	d.y += d3.event.dy;
  		});*/
 		
-		svg.append("defs").selectAll("marker")
+		svg.append("svg:defs").selectAll("marker")
 		.data(["OneWayArrow"])
 		.enter()
-		.append("marker")
+		.append("svg:marker")
 		.attr("id", String)
-		.attr("viewBox", "0 0 6 6")
+		.attr("class", "arrow")
+		.attr("viewBox", "0 0 8 8")
 		.attr("refX", 6)
 		.attr("refY", 3)
-		.attr("markerWidth", 10)
-		.attr("markerHeight", 10)
+		.attr("markerWidth", 8)
+		.attr("markerHeight", 8)
 		.attr("orient", "auto")
 		.append("path")
 		.attr("d", "M0,3v-3l6,3l-6,3z");
 		
+		/*
 		var background = svg.append("rect")
         .attr("class", "background")
         .attr("x", 0)
@@ -365,47 +357,46 @@ var JujuMapper = function(o) {
         .attr("width", width)
         .attr("height", height)
 		.on("mouseup", function(d) {
-			console.log('map mouseup');
-			/* clear any selection if editing */
-			//if (selection.length && editing())
-				//render();
 		});
+		 */
+		
+		var c = svg.append("svg:g").attr("id", "container");
+		
+		c_map = c.append("svg:g").attr("class", "map");
+		
+		c_lines = c_map.append("svg:g").attr("id", "lines");
+		c_rooms = c_map.append("svg:g").attr("id", "rooms");
+		c_tags = c_map.append("svg:g").attr("id", "tags");
 
-		var c = svg.append("g").attr("id", "container");
-		
-		c_map = c.append("g").attr("class", "map");
-		
-		if (window.chrome) 
+		if (j.browser.safari || j.browser.chrome) /* fix for Safari & Chrome scaling */
 			c_map.attr("transform", "scale("+o.scale+")");
 		
-		c_lines = c_map.append("g").attr("id", "lines");
-		c_rooms = c_map.append("g").attr("id", "rooms");
-		c_tags = c_map.append("g").attr("id", "tags");
 		//myGlow = glow("myGlow").rgb("#aaa").stdDeviation(1);
 		
-	    nice = j(o.container).niceScroll({ 
-			cursorborder: 'none',
-			//boxzoom: 1,
-			touchbehavior: 1,
-			cursorwidth: 0
-		});
+		//if (j.browser.safari && !j.browser.chrome)
+		    nice = j(o.container).niceScroll({ 
+				cursorborder: 'none',
+				//boxzoom: 1,
+				touchbehavior: 1,
+				cursorwidth: 0
+			});
 		
 		j(o.container).scroll(function() {
 		    clearTimeout(j.data(this, 'scrollTimer'));
 		    j.data(this, 'scrollTimer', setTimeout(function() {
-		    	console.log('Mapper: stopped scrolling');
+		    	log('Mapper: stopped scrolling');
 		    	updateVisible();
 		    }, 200));
 		});
 
 		W = j(o.container).width(), H = j(o.container).height();
-		
+		if (o.onLoad)
+			o.onLoad();
 	}
 	
  	var genRooms = function() {
  		
- 		if (Config.debug)
- 			console.log('mapper.genRooms: '+stringify(at));
+ 		log('mapper.genRooms: '+stringify(at));
  		//areas[at.zone]
  		
  		var T = j(o.container).scrollTop(),
@@ -422,8 +413,8 @@ var JujuMapper = function(o) {
  			if (dungeon && r.zone != at.zone && r.trans != 1)
  				return 0;
  			
- 			if (noex && r.num != at.num)
- 				return 0;
+ 			//if (noex && r.num != at.num)
+ 				//return 0;
  			
 			if (!see && r.z != at.z) {
 				//don't render rooms 2 vertical levels apart
@@ -443,8 +434,8 @@ var JujuMapper = function(o) {
  				return 0;
  			
  			if (areas[r.zone]) {
-	 			if (!see && r.zone != at.zone && r.road != 1 && ((W < 1000 && n > 600) || noexit(r) || (r.trans != 1 && areas[r.zone].dungeon)) ) {
-	 				//console.log('Mapper.genRooms: hidden dungeon room ' + stringify(r));
+	 			if (!see && r.zone != at.zone && ((W < 1000 && n > 600) || noexit(r) || (r.trans != 1 && areas[r.zone].dungeon)) ) {
+	 				//log('Mapper.genRooms: hidden dungeon room ' + stringify(r));
 	 				return 0;
 	 			}
 	 			
@@ -457,6 +448,9 @@ var JujuMapper = function(o) {
 	 				//return 0;
  			}
  			
+ 			if (n > 600)
+ 				return 0;
+ 			
  			if (!edit && loc.has(x + 'x' + y))
  				return 0;
  			
@@ -467,7 +461,7 @@ var JujuMapper = function(o) {
  			return 1;
  		});
  		if (Config.debug)
- 			console.log("Mapper.genRooms: " + R.length);
+ 			log("Mapper.genRooms: " + R.length);
  	}
  	
 	var genExits = function() {
@@ -504,16 +498,17 @@ var JujuMapper = function(o) {
     			if (R[r].zone != rooms[E[e]].zone && areas[R[r].zone].notag != 1 && j.inArray(R[r].zone, zonetags) == -1) {
         			tags.push({ to: R[r], e: e});
         			zonetags.push(R[r].zone);
-        			//console.log('added tag:\n'+ R[r].zone);
+        			//log('added tag:\n'+ R[r].zone);
         		}
     			
     			exits.push(d);
-    			//console.log('added exit:\n'+ stringify(d));
+    			//log('added exit:\n'+ stringify(d));
     		}
 		}
 	}
 	
 	var drawExit = function(d) {
+		
 		if (d.type == 'jump') {
     		
     		var ghost = {
@@ -524,7 +519,15 @@ var JujuMapper = function(o) {
     	    var dx = d.to.x - ghost.x,
     	    dy = d.to.y - ghost.y,
     	    dr = Math.sqrt(dx * dx + dy * dy) * 0.8;
+    		
     		var flip = d.flip?0:1; /* invert the curve */
+    		
+    		if (d.e == 'e' && d.to.x < d.from.x && d.to.y < d.from.y) {
+    			flip = 0;
+    		}
+    		if (d.e == 's' && d.to.x < d.from.x && d.to.y > d.from.y) {
+    			flip = 0;
+    		}
     		
     	    return "M" + d.from.x + "," + d.from.y + "L" + ghost.x + "," + ghost.y + "M" + ghost.x + "," + ghost.y + "A" + dr + "," + dr + " 0 0," + flip +" " + d.to.x + "," + d.to.y;
     	
@@ -539,14 +542,11 @@ var JujuMapper = function(o) {
 
  		if (!ready || !at) {
  			setTimeout(render, 1000);
- 			console.log('Delaying render until map is loaded.');
+ 			log('Delaying render until map is loaded.');
  			return;
  		}
-
- 		if (skipframes)
- 			return --skipframes;
  		
-        console.log('Mapper.render @' + at.num);
+        log('Mapper.render @' + at.num);
 
         var see = seeall();
         
@@ -555,13 +555,15 @@ var JujuMapper = function(o) {
         genRooms();
 		genExits();
 		
-		j("#mapper .tooltip").remove();
+		if (!o.notip)
+			j("#mapper .tooltip").remove();
+		
 		svg.selectAll(".room, .line, .tag").remove();
         
         lns = c_lines.selectAll(".line")
             .data(exits, function(d) { return "line_" + (d.from.num + '-' + d.to.num) })
             .enter()
-            .append("path")
+            .append("svg:path")
             .attr("id", function(d) { return "line_" + (d.from.num + '-' + d.to.num) })
             .attr("class", function(d) { 
 	            
@@ -578,10 +580,28 @@ var JujuMapper = function(o) {
 	        		return "url(#OneWayArrow)";
 	        	return null;
 	        })
+	        .attr("fill", function(d) {
+	        	
+	        	return null;
+	        	
+	        	if (at.num == d.from.num)
+	        		return 'White';
+	        	
+	        	if (at.num == d.to.num && d.type != 'jump')
+	        		return 'White';
+	        	
+	        	if (d.from.z != d.to.z)
+	        		return 'Crimson';
+	        	
+	        	if (areas[d.to.zone||d.from.zone])
+	        		return areas[d.to.zone||d.from.zone].color;
+	        	
+	        	return 'none';
+	        })
 	        .style("stroke", function(d) {
 
 	        	//if (d.to.num == at.num)
-	        		//console.log(areas[d.to.zone||d.from.zone].color);
+	        		//log(areas[d.to.zone||d.from.zone].color);
 	        	
 	        	if (at.num == d.from.num)
 	        		return 'White';
@@ -603,12 +623,12 @@ var JujuMapper = function(o) {
 	        })
             .attr("d", drawExit);
 		
-		//console.log('Mapper.render after links');
+		//log('Mapper.render after links');
 		
 		rms = c_rooms.selectAll(".room")
           	.data(R, function(d) { return d.num })
           	.enter()
-            .append('circle')
+            .append('svg:circle')
           	.attr("cx", function(d) { return d.x; })
           	.attr("cy", function(d) { return d.y; })
           	.attr("id", function(d) { return "room_"+d.num })
@@ -641,9 +661,10 @@ var JujuMapper = function(o) {
         				if ((p = path(d))) {
         					p.shift();
         					//mskipframes = p.length - 1;
-        					for (var i = 0; i < p.length; i++)
+        					for (var i = 0; i < p.length; i++) {
         						p[i] = p[i][0];
-        					Config.socket.send(p.join(';'));
+        						Config.socket.write(p[i]);
+        					}
             			}
             		}
             		
@@ -703,7 +724,8 @@ var JujuMapper = function(o) {
             	d3.event.stopPropagation();
             })
             .on("mouseover", function(d) {
-				
+            	if (o.notip)
+            		return;
             	j(d3.event.target).tooltip({ 
 			      	container: '.mapper .content',
             		trigger: 'manual'
@@ -712,18 +734,20 @@ var JujuMapper = function(o) {
 				svg.select('#room_'+d.num).attr("r", 6);
             })
             .on("mouseout", function(d) {
+            	if (o.notip)
+            		return;
             	j(d3.event.target).tooltip('destroy');
 				svg.select('#room_'+d.num).attr("r", 4);
             })/*
             .call(drag)
             .call(myGlow)*/;
 		
-		//console.log('Mapper.render after rooms');
+		//log('Mapper.render after rooms');
 		
         tgs = c_tags.selectAll(".tag")
             .data(tags, function(d) { return "tag_" + d.to.num })
             .enter()
-            .append("text")
+            .append("svg:text")
             .text(function(d) {
             	return d.to.zone;
             })
@@ -773,15 +797,21 @@ var JujuMapper = function(o) {
         
         if (cb) {
         	if (Config.debug)
-        		console.log('Mapper.render callback');
+        		log('Mapper.render callback');
         	cb.call();
         }
+        
+        
 	}
 
 	var updateVisible = function(cb) {
+		
 		if (Config.debug)
-			console.log("Mapper.updateVisible");
-		j(o.container + " .room").tooltip('destroy');
+			log("Mapper.updateVisible");
+		
+		if (!o.notip)
+			j(o.container + " .room").tooltip('destroy');
+		
     	svg.selectAll(".room, .line, .tag").remove();
     	W = j(o.container).width(), H = j(o.container).height();
         render(cb);
@@ -789,7 +819,7 @@ var JujuMapper = function(o) {
 	
 	var moveRoom = function(r) {
 		
-		console.log("Mapper.moveRoom: " + stringify(r));
+		log("Mapper.moveRoom: " + stringify(r));
 		
 		svg.select("#room_"+r.num)
 	   .transition()
@@ -807,7 +837,7 @@ var JujuMapper = function(o) {
 
 	var upload = function(o) {
 		
-		console.log('Mapper.upload data');
+		log('Mapper.upload data');
 		var data, n = 0;
 		
 		try {
@@ -857,7 +887,7 @@ var JujuMapper = function(o) {
 		
 		var t = "Successfully prepped " + n + "/" + data.rooms.length + " rooms.<br>";
 
-		console.log("Mapper.upload: " + t);
+		log("Mapper.upload: " + t);
 		
 		status.css({ height: 240 }).niceScroll({ 
 			cursorborder: 'none',
@@ -931,7 +961,7 @@ var JujuMapper = function(o) {
 
 	var zoom = function(d) {
 		
-		console.log("Mapper.zoom: "+d);
+		log("Mapper.zoom: "+d);
 		
 		if (d == 'in')
 			o.scale += 0.2;
@@ -950,7 +980,7 @@ var JujuMapper = function(o) {
 	
 	var stretch = function(r) {
 		
-		console.log("Mapper.stretch: check "+stringify(r));
+		log("Mapper.stretch: canvas size check "+stringify(r));
 		
 		var shiftX = 0, shiftY = 0, stretched = 0;
 		
@@ -988,7 +1018,7 @@ var JujuMapper = function(o) {
 		if (stretched) {
 			init();
 			go(at);
-			console.log("Mapper.stretch: canvas stretch based on "+stringify(r));
+			log("Mapper.stretch: canvas stretch based on "+stringify(r));
 		}
 	}
 	
@@ -999,7 +1029,7 @@ var JujuMapper = function(o) {
 		//r.zone = r.zone.split(' I')[0];
 		
 		if ((A = map.areas.index('name', r.zone)) == -1) {   
-			console.log('New area first seen.');
+			log('New area first seen.');
 		   
 			var a = {
 				name: r.zone,
@@ -1008,15 +1038,15 @@ var JujuMapper = function(o) {
 		   
 			map.areas.push(a);
 			areas[r.zone] = a;
-			//console.log(a);
+			//log(a);
 		}
-		//console.log(areas);
+		//log(areas);
 	}
 	
 	var update = function(r, auto) {
 	   
 		if (!auto || Config.debug)
-			console.log("Mapper.update: " + stringify(r));
+			log("Mapper.update: " + stringify(r));
 
 		var to, i, type, inside = (r.terrain && r.terrain.toLowerCase().has('inside'))?1:0;
 		//r.road = (r.terrain && r.terrain.toLowerCase().has('road'))?1:0;
@@ -1030,7 +1060,7 @@ var JujuMapper = function(o) {
 		*/
 		
 		if (j.isEmptyObject(rooms)) {
-			console.log('Mapper.udate: First ever room.');
+			log('Mapper.udate: First ever room.');
 			r.x = o.width / 2;
 			r.y = o.height / 2;
 			r.z = 0;
@@ -1044,13 +1074,13 @@ var JujuMapper = function(o) {
 		if (rooms[r.num]) {
 		   
 			if (!auto)
-				console.log('Mapper.update: merge');
+				log('Mapper.update: merge');
 		   
 		   delete rooms[r.num].exits;
 		   r = j.extend(true, rooms[r.num], r);
 		   
 		   if (!auto)
-			   console.log(stringify(r));
+			   log(stringify(r));
 		   
 		   svg.selectAll("#room_"+r.num).attr('title', r.num + ': ' + r.name);
 			
@@ -1065,7 +1095,7 @@ var JujuMapper = function(o) {
 
 		if (noexit(r) && !r.x) {
 			
-			console.log('Mapper.update: no-exit room');
+			log('Mapper.update: no-exit room');
 			
 			if (prev && prev.x) {
 	    	   r.x = prev.x + (xOffset.e / 2);
@@ -1078,7 +1108,7 @@ var JujuMapper = function(o) {
 			if (!auto)
 				moveRoom(r);
 			else {
-				console.log(stringify(r));
+				log(stringify(r));
 				return 1;
 			}
 			
@@ -1087,7 +1117,7 @@ var JujuMapper = function(o) {
 		for (var e in r.exits) {
 		   
 		   var E = r.exits[e];
-		   //console.log(E);
+		   //log(E);
 		   
 	       if (E == r.num) {
 	       		continue;
@@ -1115,7 +1145,7 @@ var JujuMapper = function(o) {
 		    			 || rooms[E].y < 0 || rooms[E].y > o.height)
 		    		   			stretch(rooms[E]);
 		    	   if (!auto)
-		    		   console.log("New unexplored: "+stringify(rooms[E]));
+		    		   log("New unexplored: "+stringify(rooms[E]));
 		    	   continue;
 	    	   }
 	       } 
@@ -1134,7 +1164,7 @@ var JujuMapper = function(o) {
 	       				return r.z;
 	       		})();
 	    	   if (!auto)
-	    		   console.log("New neighbor prelim. co-ordinates: "+stringify(to));
+	    		   log("New neighbor prelim. co-ordinates: "+stringify(to));
 	       }
 	       
     	   //if (!to.exits)
@@ -1161,7 +1191,7 @@ var JujuMapper = function(o) {
     	   if (typeof r.via != 'undefined')
     		   continue;
 	       
-	       console.log('Placement via:\n'+stringify(to));
+	       log('Placement via:\n'+stringify(to));
 	       
            r.via = to.num;
            
@@ -1203,7 +1233,7 @@ var JujuMapper = function(o) {
   			
             if (r.x)
 	  			if (r.x != to.x - x_off || r.y != to.y - y_off) {
-	                console.log('Conflicting relative positions for '+stringify(r));
+	                log('Conflicting relative positions for '+stringify(r));
 	                r.odd = 1;
 	  			}
             */
@@ -1231,13 +1261,13 @@ var JujuMapper = function(o) {
         	   moveRoom(r);
            }
            else {
-        	   console.log(stringify(r));
+        	   log(stringify(r));
         	   return 1;
            }
         	   
 	   }
 	   
-	   //console.log(rooms);
+	   //log(rooms);
 	   if (!auto)
 		   go(r);
 	   else
@@ -1246,20 +1276,20 @@ var JujuMapper = function(o) {
 	
 	var path = function(to) {
 		
-		console.log('Mapper.path to: '+stringify(to));
+		log('Mapper.path to: '+stringify(to));
 		
 		var limit = 0;
-		var i, n, e, p = [], q = [], h = [], loop;
+		var i, n, e, p = [], q = [], h = [];
 		
 		q.push([ ['@', at.num] ]);
 		
 		while (q.length) {
 			
 			//if (++limit < 10)
-				//console.log(stringify(q));
+				//log(stringify(q));
 			
-			if (limit > 1000) {
-				console.log('Mapper.path hit limit (1000 loops).');
+			if (++limit > 500) {
+				log('Mapper.path hit limit (500 iterations).');
 				return null;
 			}
 			
@@ -1272,19 +1302,15 @@ var JujuMapper = function(o) {
 					
 				for (var e in Ex) {
 					
-					loop = 0;
-					
 					if (h.has(Ex[e]))
 						continue;
 					
-					if (!loop || !q.length) {
 						var a = j.extend(true, [], p);
 						a.push([e, Ex[e]]);
 							if (Ex[e] == to.num)
 								return a;
 						q.push(a);
 						h.push(Ex[e]);
-					}
 				}
 			}
 			
@@ -1297,7 +1323,7 @@ var JujuMapper = function(o) {
 	
 	var go = function(r) {
 	    
-		console.log('Mapper.go: '+stringify(r));
+		log('Mapper.go: '+stringify(r));
 
 		if (!r.x && rooms[r.num])
 			r = at = rooms[r.num];
@@ -1305,28 +1331,33 @@ var JujuMapper = function(o) {
 		if (r.x) {
 			var x = (r.x * o.scale) - (j(o.container).width() / 2);
 			var y = (r.y * o.scale) - (j(o.container).height() / 2);
-			//console.log('Mapper.go: scroll to: x-'+x + ' y-'+y );
+			log('Mapper.go: scroll to: x'+x + ' y'+y );
 			j(o.container).scrollLeft(x).scrollTop(y);
+			log('Mapper.go: scrolled to: x'+j(o.container).scrollLeft() + ' y'+j(o.container).scrollTop() );
 			/* if near map edge, render anyway */
 			if (y + H > (o.height - H) || x + W > (o.width - W))
 				render();
 		}
 		
-	 	win.title(r.num + ': ' + r.name + ' - ' + r.zone);
+		if (win)
+			win.title(r.num + ': ' + r.name + ' - ' + r.zone);
 	}
 	
 	var gmcp = function(d) {
 
+		log('Mapper.gmcp enter');
+		
 		if (!d.has('room.info'))
 		    return d;
 		
 		try {
 			var r = eval('(' + d.match(/[^]+? (.*)/)[1] + ')');
+			log(r);
 		} catch(err) {
-			console.log('Mapper gmcp parse error: '+err);
+			log('Mapper gmcp parse error: '+err);
 		};
 		
-		console.log('Mapper.gmcp: '+stringify(r));
+		log('Mapper.gmcp: '+stringify(r));
 
 		if (at) {
 			if (at.num == r.num)
@@ -1359,7 +1390,7 @@ var JujuMapper = function(o) {
 			j('.mapper .context-top ul').append('<li class="kbutton tip dir" title="Nudge selected up (north)." data="n"><i class="icon-angle-up"></i></li>');
 			j('.mapper .context-top ul').append('<li class="kbutton tip dir" title="Nudge selected down (south)." data="s"><i class="icon-angle-down"></i></li>');
 			j('.mapper .context-top ul').append('<li class="kbutton tip dir" title="Nudge selected right (east)." data="e"><i class="icon-angle-right"></i></li>');
-			j('.mapper .context-top ul').append('<li class="kbutton tip trans" style="display: none" title="Move room to adjacent area."><i class="icon-external-link"></i></li>');
+			//j('.mapper .context-top ul').append('<li class="kbutton tip trans" style="display: none" title="Move room to adjacent area."><i class="icon-external-link"></i></li>');
 			j('.mapper .context-top ul').append('<li class="kbutton tip road" title="Flag selection as road (always shown)."><i class="icon-road"></i></li>');
 			j('.mapper .context-top ul').append('<li class="kbutton tip dungeon" title="Flag area as dungeon (not shown unless inside)."><i class="icon-th"></i></li>');
 			j('.mapper .context-top ul').append('<li class="kbutton tip reveal" title="Reveal all rooms in map window."><i class="icon-eye-open"></i></li>');
@@ -1450,10 +1481,10 @@ var JujuMapper = function(o) {
 	j(document).on('click', id + ' .context .road', function() {
 		for (var s = 0; s < selection.length; s++) {
 			var S = rooms[selection[s]];
-			if (S.road)
-				delete S.road;
+			if (S.trans)
+				delete S.trans;
 			else
-				S.road = 1;
+				S.trans = 1;
 			svg.selectAll('.room_'+S.num).remove();
 		}
 		render(function() { go(at) });
@@ -1480,7 +1511,7 @@ var JujuMapper = function(o) {
 			delete map.areas[i].dungeon;	
 		}
 		
-		console.log(areas);
+		log(areas);
 		render(function() { go(at) });
 	});
 	
@@ -1521,59 +1552,54 @@ var JujuMapper = function(o) {
 		save();
 	});
 	
-    var win = new Window({
-        id: id,
-        closeable: 1,
-        //max: 1,
-        css: {
-            width: 400,
-            height: 400
-        },
-        'class': 'mapper nofade',
-        title: 'Juju Mapper',
-        onResize: function() {
-        	nice.resize();
-        	go(at);
-        }
-    });
-    
-    win.button({
-    	icon: 'icon-edit',
-    	title: 'Start mapping / editing.',
-    	click: function() {
-    		j(id + ' .icon-edit').toggleClass('on');
-    		j(id + ' .toolbar .icon-save').toggle();
-    		context();
-    	}
-    });
-    
-    /*
-    win.button({
-    	icon: 'icon-save',
-    	title: 'Save the map data to server.'
-    }); */
-    
-    j(id + ' .toolbar .icon-save').addClass('save').toggle();
-    
-    win.button({
-    	icon: 'icon-zoom-out',
-    	title: 'Zoom out.',
-    	click: function() {
-    		zoom('out')
-    	}
-    });
-    
-    win.button({
-    	icon: 'icon-zoom-in',
-    	title: 'Zoom in.',
-    	click: function() {
-    		zoom('in')
-    	}
-    });
-	
-	j(id + ' .icon-stop').hide();
-	//j(id + ' .icon-edit').hide();
-    
+	if (!o.clean) {
+	    var win = new Window({
+	        id: id,
+	        closeable: 1,
+	        //max: 1,
+	        css: {
+	            width: 400,
+	            height: 400
+	        },
+	        'class': 'mapper nofade',
+	        title: 'Juju Mapper',
+	        onResize: function() {
+	        	nice.resize();
+	        	go(at);
+	        }
+	    });
+	    
+	    win.button({
+	    	icon: 'icon-edit',
+	    	title: 'Start mapping / editing.',
+	    	click: function() {
+	    		j(id + ' .icon-edit').toggleClass('on');
+	    		j(id + ' .toolbar .icon-save').toggle();
+	    		context();
+	    	}
+	    });
+	    
+	    j(id + ' .toolbar .icon-save').addClass('save').toggle();
+	    
+	    win.button({
+	    	icon: 'icon-zoom-out',
+	    	title: 'Zoom out.',
+	    	click: function() {
+	    		zoom('out')
+	    	}
+	    });
+	    
+	    win.button({
+	    	icon: 'icon-zoom-in',
+	    	title: 'Zoom in.',
+	    	click: function() {
+	    		zoom('in')
+	    	}
+	    });
+		
+		j(id + ' .icon-stop').hide();
+	}
+
 	return {
 		render: render,
 		gmcp: gmcp

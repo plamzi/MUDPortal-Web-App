@@ -11,16 +11,19 @@ var ControlPanel = function () {
 
 	var d = window.sitelist, pref = window.user.pref;
 	
-	var win = new Window().init({
+	var tmc;
+	
+	var win = new Window({
 		id: id,
 		title: 'Game Center',
 		noresize: 1,
+		nofade: 1,
 		css: {
 			width: 700,
 			height: 500,
 			top: 160,
 			left: 100,
-			zIndex: 1
+			zIndex: 101
 		}
 	});
 	
@@ -28,51 +31,101 @@ var ControlPanel = function () {
 			<div class="left gamepanel" style="width: 500px; height: 100%"></div>')
 
 	var loadProfiles = function () {
-		j(id + ' .gamelist').append('<a class="my-profiles folder" data="profile-link"><i class="icon-folder-open-alt"></i> My Profiles</a><br>');
+		j(id + ' .gamelist').prepend('<div class="profiles"><a class="folder" data="profile-link"><i class="icon-folder-open-alt"></i> My Profiles</a><br></div>');
 		if (pref.profiles) {
 			for (var p in pref.profiles) {
 				var P = pref.profiles[p];
-				j(id + ' .gamelist').append('<a class="profile-link" data="'+d.index('name', P.name)+'">'+p+'<br></a>');
+				if ((Config.clean || Config.solo) && Config.host != P.host)
+					continue;
+				var i = d.index('host', P.host);
+				j(id + ' .gamelist .profiles').append('<a class="profile-link" host="'+d[i].host+'" port="'+d[i].port+'" thumb="'+d[i].img+'">'+p+'<br></a>');
 			}
 		}
 	}
 	
-	//j(id).center();
-	
-	loadProfiles();
-	
-	j(id + ' .gamelist').append('<a class="big-list folder" data="game-link"><i class="icon-folder-open-alt"></i> Game List</a><br>');
-	
-	//console.log('Game list length: '+d.length);
-	
-	for (g = 0; g < d.length; g++) {
-		try {
-				var el = d[g].elements.replace(/&amp;/g, '&');
-				var play = el.match(/\[play=(.+?)\]/)[1].replace(/\\\//g, '/');
-				
-				if (!play.has('http')) {
-					d[g].host = play.split(':')[0];
-					d[g].port = play.split(':')[1];
-				}
-				else {
-					d[g].host = play.param('host');
-					d[g].port = play.param('port');
-				}
-
-				if (!d[g].host || !d[g].port) {
-					console.log('Skipping game: '+stringify(d[g]));
-					continue;
-				}
+	var loadMudconnectList = function() {
+		
+		if (Config.solo || Config.clean)
+			return;
 			
-			j(id + ' .gamelist').append('<a class="game-link" data="'+g+'" host="'+d[g].host+'">'+d[g].name+'<br></a>');
-			d[g].img = '/'+el.match(/"(images\\\/.+?\.(png|gif|jpg))"/i)[1].replace(/\\\//g, '/');
+		j.get('/app/xml/mudconnect.xml', function(d) {
 			
-		} catch(ex) { console.log(d[g]) }
+			j(id + ' .gamelist .profiles').after('<div class="tmc"><a class="tmc-list folder"><i class="icon-folder-close-alt"></i> Big List (A-Z)<br></a></div>');
+			
+			tmc = j(d).find('mud');
+			
+			tmc = tmc.sort(function(a, b) {
+				return j(a).find('title').text() > j(b).find('title').text()
+			});
+			
+			var thumb = '';
+			
+			for (var g = 0; g < tmc.length; g++) {
+				var name = j(tmc[g]).find('title').text();
+				var host = j(tmc[g]).find('host').text();
+				var port = j(tmc[g]).find('port').text();
+				if (name.length && host.length && port.length)
+					j(id + ' .gamelist .tmc').append('<a style="display:none" class="tmc-link game-link" host="'+host+'" port="'+port+'" thumb="'+thumb+'">'+name+'<br></a>');
+			}
+		});
 	}
 	
-	j(id + ' .folder').click(function() {
+	var loadSiteList = function() {
+
+		j(id + ' .gamelist').append('<div class="sitelist"><a class="big-list folder" data="game-link"><i class="icon-folder-open-alt"></i> Site List<br></a></div>');
+
+		for (g = 0; g < d.length; g++) {
+			try {
+					var el = d[g].elements.replace(/&amp;/g, '&');
+					var play = el.match(/\[play=(.+?)\]/)[1].replace(/\\\//g, '/');
+					
+					if (!play.has('http')) {
+						d[g].host = play.split(':')[0];
+						d[g].port = play.split(':')[1];
+					}
+					else {
+						d[g].host = play.param('host');
+						d[g].port = play.param('port');
+					}
+
+					if (!d[g].host || !d[g].port) {
+						console.log('Skipping game: '+stringify(d[g]));
+						continue;
+					}
+				
+				if ((Config.clean || Config.solo) && Config.host != d[g].host)
+					continue;
+				
+				d[g].img = '/'+el.match(/"(images\\\/.+?\.(png|gif|jpg))"/i)[1].replace(/\\\//g, '/');
+				
+				j(id + ' .sitelist').append('<a class="game-link" data="'+g+'" host="'+d[g].host+'" port="'+d[g].port+'" thumb="'+d[g].img+'">'+d[g].name+'<br></a>');
+				
+				
+			} catch(ex) { log(d[g]) }
+		}
+
+	}
+	
+	var loadGamelist = function() {
+		j(id + ' .gamelist').empty();
+			loadSiteList();
+			loadMudconnectList();
+			loadProfiles();
+	}
+
+	loadGamelist();
+
+	j(id).on('click', '.tmc', function(e) {
+		e.stopPropagation();
+		j('.tmc .folder').click();
+		j('.gamelist').scrollTop(0);
+	});
+	
+	j(id).on('click', ' .folder', function(e) {
 		
-		j(this).parent().find('.'+j(this).attr('data')).toggle();
+		e.stopPropagation();
+		
+		j(this).siblings().toggle();
 		
 		var i = j(this).find('i');
 		
@@ -84,37 +137,56 @@ var ControlPanel = function () {
 			i.addClass('icon-folder-open-alt');
 			i.removeClass('icon-folder-close-alt');
 		}
+		
+		//setTimeout(function() {
+			j('.gamelist').getNiceScroll().resize();
+		//}, 2000);
+		
 	});
 	
-	j(id + ' .game-link, ' + id + ' .profile-link').click(function() {
+	j(id).on('click', ' .game-link, .profile-link', function(e) {
+		
+		e.stopPropagation();
 		
 		var profile = j(this).hasClass('profile-link');
-		var t = j(id + ' .gamepanel');
-		var name = j(this).text();
 		
-		var d = window.sitelist;
-			for (g = 0; g < d.length; g++)
-				if (j(this).attr('data') == g)
-					break;
-
+		var tmclink = j(this).hasClass('tmc-link');
+		
+		var t = j(id + ' .gamepanel');
+		
+		t.removeAttr('profile');
+		
+		var name = j(this).text();
+		var host = j(this).attr('host');
+		var port = j(this).attr('port');
+		var thumb = j(this).attr('thumb');
+		
 		t.attr('name', name);
-		t.attr('host', d[g].host);
-		t.attr('port', d[g].port);
-		//j('.gamepanel .tab-pane').getNiceScroll().remove();
-		var url = '/play?host=' + d[g].host + '&port=' + d[g].port + '&name=' + name + (profile?'&profile='+encodeURIComponent(name):'');
-		url = '<a onclick="window.open(\''+url+'\', \'_self\')" class="button-primary">play</a>';
+		t.attr('host', host);
+		t.attr('port', port);
+
+		var url = '/play?host=' + host + '&port=' + port + '&name=' + encodeURIComponent(name) + (profile?'&profile='+encodeURIComponent(name):'');
+		url = "<a href=\""+url+"\" class=\"button-primary\">play</a>";
 		
 		if (profile)
 			t.attr('profile', '1');
 		
-		t.html('');
+		j('.gamepanel .scroll').niceScroll('destroy');
 		
-		t.append('<div class="left" style="padding: 4px 18px 0px 4px"><img class="game-thumb" src="'+d[g].img+'"></div><div class="left" style="padding-top: 4px">'+name+'<div style="height: 8px; clear: both"></div>'+url);
-			
-		t.append('<br>\
-		<a class="kbutton save right tip" title="Save your preferences for this game or game profile."><i class="icon-save"></i> save</a></div>\
-		<a class="kbutton clone right tip" title="Create a profile for this game."><i class="icon-copy"></i> profile</a></div>\
-		<div style="clear: both"></div>');
+		t.empty();
+		
+		t.append('<div class="left" style="padding: 4px 18px 0px 4px"><img class="game-thumb" src="'+thumb+'"></div><div class="left" style="padding-top: 4px">'+name+'<div style="height: 8px; clear: both"></div>'+url);
+		
+		if (profile)
+			t.append('<br>\
+					<a class="kbutton save right tip" title="Save your preferences for this game or game profile."><i class="icon-save"></i> save</a></div>\
+					<a class="kbutton pdel right tip" title="Delete this game profile."><i class="icon-remove"></i> delete</a></div>\
+					<div style="clear: both"></div>');
+		else
+			t.append('<br>\
+			<a class="kbutton save right tip" title="Save your preferences for this game or game profile."><i class="icon-save"></i> save</a></div>\
+			<a class="kbutton clone right tip" title="Create a profile for this game."><i class="icon-copy"></i> profile</a></div>\
+			<div style="clear: both"></div>');
 				
 		t.append('<ul class="nav nav-tabs">\
 				<li class="active"><a href="#macros" class="kbutton" data-toggle="tab"><i class="icon-retweet"></i> macros</a></li>\
@@ -133,14 +205,7 @@ var ControlPanel = function () {
 		
 		j(id + ' .gamepanel #macros').append('Macros support arguments (wildcards) in the format $1, $2... $*. The macro "$me -> Myname" will replace $me with Myname in any other macros or triggers.<br><br><a class="right kbutton macro-add"><i class="icon-plus"></i> new</a><div class="scroll"></div>');	
 		j(id + ' .gamepanel #triggers').append('Triggers support wildcards in the format $1, $2... $9.<br><br><a class="right kbutton trigger-add"><i class="icon-plus"></i> new</a><div class="scroll"></div>');	
-				
-		j('.gamepanel .scroll').niceScroll({ 
-			cursorborder: 'none', 
-			touchbehavior: 1
-		});
-		
-		j('.gamepanel .scroll').css({ height: '340px' });
-		
+
 		if (user.id && pref) {
 	
 			if (pref.sitelist && pref.sitelist[name])
@@ -179,6 +244,13 @@ var ControlPanel = function () {
 			for (var s = 0; s < G.settings.length; s++)
 				if (!G.settings[s].value)
 					j(id + ' #settings ' + '#'+G.settings[s].id).removeClass('icon-check').addClass('icon-unchecked');
+
+		j('.gamepanel .scroll').css({ height: '280px' });
+		
+		j('.gamepanel .scroll').niceScroll({ 
+			cursorborder: 'none', 
+			touchbehavior: 1
+		});
 		
 		j('.gamelist a').removeClass('game-link-selected');
 		j(this).addClass('game-link-selected');
@@ -197,8 +269,9 @@ var ControlPanel = function () {
 				j(this).click();
 		});
 	}
-	else 
-		j(id + ' .game-link:first').click();
+	else
+		if (j(id + ' .game-link:first').length)
+			j(id + ' .game-link:first').click();
 	
 	j(id + ' .nice').niceScroll({ 
 		cursorborder: 'none', 
@@ -254,7 +327,21 @@ var ControlPanel = function () {
 			new Modal({
 				title: 'Unsupported Action',
 				text: 'Please register or login to be able to save your game preferences.',
-				closeText: 'OK'
+				buttons: [
+				    {
+				    	text: 'Nah',
+				    	click: function() {
+				    		j('#modal').modal('hide');
+				    	}
+				    },
+				    {
+				    	text: 'Register',
+				    	click: function() {
+				    		window.open('/component/comprofiler/registers', '_reg');
+				    		j('#modal').modal('hide');
+				    	}
+				    }
+				]
 			});
 			return false;
 		}
@@ -270,8 +357,10 @@ var ControlPanel = function () {
 			pref.sitelist[name] = {
 				macros: [],
 				triggers: [],
-				settings: []
+				settings: [],
+				host: j(this).parent().attr('host')
 			};
+
 		}
 		else {
 			
@@ -281,12 +370,11 @@ var ControlPanel = function () {
 			pref.profiles[name] = {
 				macros: [],
 				triggers: [],
-				settings: []
+				settings: [],
+				host: j(this).parent().attr('host')
 			};
 		}
-		
-		pref.sitelist[name].host = j(this).parent().attr('host');
-		
+				
 		j(id+' #macros .scroll div').each(function() {
 			var a, b;
 			if (!(a = j(this).find('input:first').val()))
@@ -313,9 +401,8 @@ var ControlPanel = function () {
 			
 			c = j(this).find('.icon-check').length;
 			
-			if (profile) {
+			if (profile)
 				pref.profiles[name].triggers.push([a, b, c]);
-			}
 			else
 				pref.sitelist[name].triggers.push([a, b, c]);
 		});
@@ -328,7 +415,7 @@ var ControlPanel = function () {
 			};
 			
 			if (profile)
-				pref.profile[name].settings.push(a);
+				pref.profiles[name].settings.push(a);
 			else
 				pref.sitelist[name].settings.push(a);
 		});
@@ -340,11 +427,11 @@ var ControlPanel = function () {
 			});
 		});
 		
-		if (exists(mp) && mp.init)
-			mp.init();
+		if (Config.MacroPane)
+			Config.MacroPane.init();
 		
-		if (exists(th) && th.init)
-			th.init();
+		if (Config.TriggerHappy)
+			Config.TriggerHappy.init();
 		
 		return false;
 	});
@@ -363,9 +450,9 @@ var ControlPanel = function () {
 		var m = new Modal({
 			title: 'New profile based on ' + j('.gamepanel').attr('name'),
 			text: '<em>Entering an existing profile name will overwrite it.</em><br><br><input type="text" placeholder="enter profile name">',
-			button: {
+			buttons: [{
 				text: 'Create',
-				click: function(evt) {
+				click: function() {
 					
 					var v;
 					
@@ -386,11 +473,21 @@ var ControlPanel = function () {
 					};
 					
 					j.post('?option=com_portal&task=set_pref', { pref: stringify(user.pref) });
+					loadGamelist();
+					j(id + ' .gamelist').getNiceScroll().resize();
 				}
-			}
+			}]
 		});
 		
 		return false;
 		
+	});
+	
+	j(id).on('click', '.pdel', function() {
+		var name = j(this).parent().attr('name');
+		delete user.pref.profiles[name];
+		j.post('?option=com_portal&task=set_pref', { pref: stringify(user.pref) });
+		loadGamelist();
+		j(id + ' .gamelist').getNiceScroll().resize();
 	});
 }

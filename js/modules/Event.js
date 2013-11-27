@@ -4,11 +4,13 @@ var Event = {
 		'before_process': [],
 		'after_protocols': [],
 		'before_html': [],
-		'colorize': [],
+		'internal_colorize': [],
+		'internal_mxp':[],
 		'before_display': [],
 		'after_display': [],
 		'before_send': [],
 		'scrollview_ready': [],
+		'chatterbox_ready': [],
 		'msdp': [],
 		'gmcp': [],
 		'atcp': []
@@ -16,7 +18,7 @@ var Event = {
 	
 	fire: function(event, data, caller) {
 		if (!this.q[event]) {
-			console.log('Event.js: No such event to fire: ' + event);
+			log('Event.js: No such event to fire: ' + event);
 			return 0;
 		}
 		for (var i = 0; i < this.q[event].length; i++)
@@ -26,7 +28,7 @@ var Event = {
 	
 	listen: function(event, cb) {
 		if (!this.q[event]) {
-			console.log('Event.js: No such event to subscribe to: ' + event);
+			log('Event.js: No such event to subscribe to: ' + event);
 			return 0;
 		}
 		this.q[event].push(cb);
@@ -35,7 +37,7 @@ var Event = {
 	
 	drop: function(event, cb) {
 		if (!this.q[event]) {
-			console.log('Event.js: No such event to drop from: ' + event);
+			log('Event.js: No such event to drop from: ' + event);
 			return;
 		}
 		for (var i = 0; i < this.q[event].length; i++)
@@ -44,6 +46,23 @@ var Event = {
 				return 1;
 			}
 		return 0;
-	}
+	},
 	
+	create: function(event) {
+		if (this.q[event]) {
+			log('Event.js: This event already exists and will not be created: ' + event);
+			return;
+		}
+		q[event] = [];
+		log('Event.js: Event created: ' + event);
+	},
+	
+	destroy: function(event) {
+		if (!this.q[event]) {
+			log('Event.js: This event does not exist and will not be destroyed: ' + event);
+			return;
+		}
+		delete q[event];
+		log('Event.js: Event destroyed: ' + event);
+	}
 }

@@ -277,8 +277,8 @@ function Utf8Translator(reader) {
                     }
                     else {
                     	ch = String.fromCharCode(b1);
-                    	if (Config.debug)
-                    		console.log("Invalid UTF8 character: " + ch);
+                    	//if (Config.debug)
+                    		//console.log("Invalid UTF8 character: " + ch);
                     		//throw "Invalid UTF8 character";
                     	return ch;
                     }

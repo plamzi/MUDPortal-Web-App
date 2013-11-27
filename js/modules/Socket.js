@@ -58,8 +58,8 @@ var Socket = function(o) {
 		connected = z_lib = 0;
 		if (z_stream)
 			ZLIB.inflateEnd(z_stream);
-		out.add('<br><span style="color: green;">Remote server has disconnected.</span><br>');
-		setTimeout(function() { connect() }, 3000);
+		out.add('<br><span style="color: green;">Remote server has disconnected. Refresh page to reconnect.</span><br>');
+		//setTimeout(function() { connect() }, 3000);
 	}
 
 	var onMessage = function (e) {
@@ -108,7 +108,8 @@ var Socket = function(o) {
 		//console.log('Socket.send');
 		msg = msg.trimm();
 		msg = Event.fire('before_send', msg, self);
-		msg = msg.replace(/\;/g, '\r\n');
+		if (!msg.has('macro') && !msg.has('alias'))
+			msg = msg.replace(/\;/g, '\r\n');
 		
 		if (ws.send && connected)
 			ws.send(msg + '\r\n');
@@ -120,7 +121,7 @@ var Socket = function(o) {
 	}
 	
 	var sendBin = function(msg) {
-		console.log('Socket.sendBin: '+msg);
+		log('Socket.sendBin: ' + msg);
 		ws.send(stringify({ bin: msg }));
 	}
 	
@@ -152,35 +153,52 @@ var Socket = function(o) {
 	
 	var prepare = function(t) {
 		
-		if (Config.debug && console)
-			console.log(t);
+		log(t);
 		
 		/* prevent splitting ansi escape sequences & MXP */
 		if (t.match(/(\x1b|\x1b\[|\x1b[^mz>]+?[^mz>])$/)) {
-			console.log('Code split protection is waiting for more input.');
+			log('Code split protection is waiting for more input.');
 			buff = t;
 			return '';
 		}
 		
+		
+		t = Event.fire('before_process', t);
+		
 		t = t.replace(/\n/g,'');
-		
-		t = Event.fire('before_process', t, { send: send, sendBin: sendBin });
-		
+
 		/*
-		 if (Config.debug)
+		 if (t.has('\x01') && Config.debug)
 			for (var i = 0; i < t.length; i++)
-				console.log(t[i] + ': ' + String.charCodeAt(t[i]));
+				log(t[i] + ': ' + String.charCodeAt(t[i]));
 		 */
 		
+		/* msdp */
+		if (t.has('\xff\xfaE')) { 
+			var m = t.match(/\xff\xfaE([^]+?)\xff\xf0/gm);
+			//log('MSDP from server');
+			if (m && m.length) {
+				for (i = 0; i < m.length; i++) {
+					log(m[i]);
+					var d = m[i].substring(3, m[i].length-2);
+					Event.fire('msdp', d);
+					t = t.replace(m[i], '');
+				}
+			}
+		}
+
+		t = Event.fire('internal_mxp', t);
+
 		if (!utf8 && t.has('ÿú* UTF-8ÿð')) {
 			utf8 = 1;
-			console.log('UTF-8 enabled.');
+			log('UTF-8 enabled.');
 			t = t.replace(/ÿú.. UTF-8../, '');
 		}
 		
 		/* gmcp */
 		if (t.has('\xff\xfa\xc9')) {
-			var m = t.match(/\xff\xfa\xc9([\s\S]+?)\xff\xf0/gm);
+			var m = t.match(/\xff\xfa\xc9([^]+?)\xff\xf0/gm);
+			//log('GMCP from server');
 			if (m && m.length) {
 				for (i = 0; i < m.length; i++) {
 					var d = m[i].substring(3, m[i].length-2);
@@ -197,23 +215,11 @@ var Socket = function(o) {
 		
 		/* atcp */					
 		if (t.has('\xff\xfa\xc8')) {
-			var m = t.match(/\xff\xfa\xc8([\s\S]+?)\xff\xf0/gm);
+			var m = t.match(/\xff\xfa\xc8([^]+?)\xff\xf0/gm);
 			if (m && m.length) {
 				for (i = 0; i < m.length; i++) {
 					var d = m[i].substring(3, m[i].length-2);
 					Event.fire('atcp', d);
-					t = t.replace(m[i], '');
-				}
-			}
-		}
-		
-		/* msdp */
-		if (t.has('\xff\xfa\x45')) { 
-			var m = t.match(/\xff\xfa\x45([\s\S]+?)\xff\xf0/gm);
-			if (m && m.length) {
-				for (i = 0; i < m.length; i++) {
-					var d = m[i].substring(3, m[i].length-2);
-					Event.fire('msdp', d);
 					t = t.replace(m[i], '');
 				}
 			}
@@ -227,17 +233,29 @@ var Socket = function(o) {
 		t = t.replace(/\x1b</g,'<');
 		
 		t = Event.fire('before_html', t, self);
-		t = Event.fire('colorize', t, self);
+		t = Event.fire('internal_colorize', t, self);
 		
-		//console.log('before negotiation cleanup: '+t);
+		//log('before negotiation cleanup: '+t);
+
+		if (t.has('\xff\xfb\x01')) {
+			log('IAC WILL ECHO');
+			if (Config.ScrollView)
+				Config.ScrollView.echoOff();
+		}
+		
+		if (t.has('\xff\xfc\x01')) {
+			log('IAC WONT ECHO');
+			if (Config.ScrollView)
+				Config.ScrollView.echoOn();
+		}
+		
 		t = t.replace(/\xff\xfa..\xff\xf0/g,'');
 		t = t.replace(/\xff(\xfa|\xfb|\xfc|\xfd|\xfe)./g,'');
 		t = t.replace(/\x07/g,''); //bell
-		t = t.replace(/\xff.\x01/g,''); //don't echo
 		t = t.replace(/\x1b\[1;1/g,''); //clear screen
 		t = t.replace(/ÿ(ù|ï)/g,'');
-		t = t.replace(/\x1b\[[0-9][A-Z]/gi,''); //erase data, cursors
-
+		t = t.replace(/\x1b\[[A-Z0-9]/gi,''); //erase unsupported ansi control data
+		t = t.replace(';0;37',''); //erase unsupported ansi control data
 		//t = t.replace(/\x1b/g,'');
 		t = t.replace(/([^"'])(http.*:\/\/[^\s\x1b"']+)/g,'$1<a href="$2" target="_blank">$2</a>');
 		
@@ -246,6 +264,9 @@ var Socket = function(o) {
 			return '';
 		
 		t = t.replace(/\uFFFF/gi,''); /* utf-8 non-character */
+
+		t = t.replace(/\xff.\x01/g,''); //echo off
+		
 		//console.log('before_display: '+t);
 		
 		t = Event.fire('before_display', t);
@@ -326,6 +347,7 @@ var Socket = function(o) {
 			
 			if (cmdi < cmds.length-1)
 				j(this).val(cmds[++cmdi]);
+			
 			this.select();
 			//this.setSelectionRange(0, 9999);
 		}
@@ -335,14 +357,11 @@ var Socket = function(o) {
 		send: send,
 		sendBin: sendBin,
 		echo: echo,
-		setSelf: function(me) { self = me },
-		getHost: function() { return host },
-		getPort: function() { return port },
+		write: function(d) { if (connected) ws.send(d + '\r\n') },
 		getProxy: function() { return proxy }
 	}
 	
-
-	Config.socket = self;
+	Config.socket = Config.Socket = self;
 	return self;
 	
 }
