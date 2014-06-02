@@ -31,8 +31,11 @@ var Modal = function(o) {
 	if (o.closeable == false || o.closeable == 0)
 		j('#modal .close').remove();
 	
-	if (o.css)
+	if (o.css) {
+		if (o.css.width)
+			o.css['margin-left'] = -(o.css.width/2); 
 		j('#modal').css(o.css);
+	}
 	
 	if (o.buttons) {
 		log('Modal custom buttons');
@@ -41,6 +44,8 @@ var Modal = function(o) {
 			j('#modal .modal-footer').prepend('<button class="kbutton custom-'+i+'" data-dismiss="'+(o.buttons[i].keep?'':'modal')+'" \
 			aria-hidden="true">'+o.buttons[i].text+'</button>');
 			j('#modal .modal-footer .custom-'+i).click(o.buttons[i].click);
+			if (o.buttons[i].css)
+				j('#modal .custom-'+i).css(o.buttons[i].css);
 		}
 	}
 	

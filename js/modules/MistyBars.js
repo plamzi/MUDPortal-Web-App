@@ -1,6 +1,6 @@
-var MistyBars = function() {
+var MistyBars = function(o) {
     
-    var cv, cs, cm, win, id = "#bar-window";
+    var cv, cs, cm, win, id = "#bar-window", o = o||{};
     
     var process = function(d) {
 		
@@ -11,12 +11,19 @@ var MistyBars = function() {
 		var value = d.match(/[^ ]+? (.*)/)[1];
 		
 		try {
-			var data = {};
-			data[key] = eval('(' + value + ')');
-			redraw(data);
-			//console.log('MistyBars received: '+stringify(data));
+			
+			var s = {};
+			s[key] = eval('(' + value + ')');
+
+			cm = exists(s['char.maxstats'])||cm;
+			cv = exists(s['char.vitals'])||cv;
+			cs = exists(s['char.status'])||cs;
+			
+			redraw();
+			log('MistyBars: '+stringify(s));
+			
 		} catch(err) {
-			//console.log('MistyBars gmcp parse error: '+err);
+			log('MistyBars gmcp parse error: '+err);
 		};
 		
 		return d;
@@ -72,10 +79,6 @@ var MistyBars = function() {
 		var st = '#bar-window .';
 		var ot = '#out-window .';
 		
-		cm = exists(d['char.maxstats'])||cm;
-		cv = exists(d['char.vitals'])||cv;
-		cs = exists(d['char.status'])||cs;
-		
 		if (cv) {
 			j(st + 'hp').html(cv.hp);
 			j(st + 'mana').html(cv.mana);
@@ -104,25 +107,28 @@ var MistyBars = function() {
 			j(st + 'tarbar' ).animate({ width: w-(w*(cs.enemypct / 100)) }, 1200, 'easeInOutExpo');
 		}
 	}
+
+	if (o.process)
+		process = eval('('+o.process+')');
+	
+	if (o.listen)
+		 Event.listen(o.listen, process);
+	else
+		 Event.listen('gmcp', process);
 	
 	Event.listen('scrollview_ready', function(d, sv) {
-
-        Config.MistyBars.draw();
-    
-	    Config.ScrollView.win.button({
+	    sv.win.button({
 	        icon: 'icon-th-list',
 	        title: 'Hide / show the misty status bar.',
 	        click: function() {
 	            j('#bar-window').toggle();
 	        }
 	    });
-	    
-	    Event.listen('gmcp', Config.MistyBars.process);
-	    
 	});
 	
+	draw();
+	
 	return {
-	    draw: draw,
 	    process: process
 	}
 }

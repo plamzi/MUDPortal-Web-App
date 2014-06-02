@@ -1,23 +1,23 @@
 var ControlPanel = function () {
 	
-	if (Config.Device.mobile)
-		return;
-	
 	var self = this;
 	
 	var id = '#control-panel';
 	
-	var pref, list, g;
+	var pref, list, g, mobile = Config.device.mobile, touch = Config.device.touch;
 
 	var d = window.sitelist, pref = window.user.pref;
 	
-	var tmc;
+	var tmc, chatlog = [], mychannel, nice, sound = false;
+	
+	if (touch && param('host'))
+		return;
 	
 	var win = new Window({
 		id: id,
 		title: 'Game Center',
 		noresize: 1,
-		nofade: 1,
+		class: 'nofade',
 		css: {
 			width: 700,
 			height: 500,
@@ -27,9 +27,20 @@ var ControlPanel = function () {
 		}
 	});
 	
-	j(id + ' .content').append('<div style="padding: 0px 4px 0px 4px; width: 172px; border-right: 1px solid #222;" class="left gamelist nice"></div>\
-			<div class="left gamepanel" style="width: 500px; height: 100%"></div>')
+	j(id + ' .content').append('<div style="width: 27%; border-right: 1px solid #222;" class="left gamelist nice"></div>\
+			<div class="left gamepanel" style="width: 72%; height: 100%"></div>')
 
+	if (touch) {
+		win.maximize();
+		j(id + ' .gamelist').css({
+			width: '50%'
+		});
+		j(id + ' .gamepanel').css({
+			width: '49%',
+			overflow: 'hidden'
+		}).addClass('nice');
+	}
+	
 	var loadProfiles = function () {
 		j(id + ' .gamelist').prepend('<div class="profiles"><a class="folder" data="profile-link"><i class="icon-folder-open-alt"></i> My Profiles</a><br></div>');
 		if (pref.profiles) {
@@ -38,14 +49,14 @@ var ControlPanel = function () {
 				if ((Config.clean || Config.solo) && Config.host != P.host)
 					continue;
 				var i = d.index('host', P.host);
-				j(id + ' .gamelist .profiles').append('<a class="profile-link" host="'+d[i].host+'" port="'+d[i].port+'" thumb="'+d[i].img+'">'+p+'<br></a>');
+				j(id + ' .gamelist .profiles').append('<a class="profile-link" host="'+d[i].host+'" port="'+d[i].port+'" thumb="'+d[i].img+'" name="'+p+'"><i class="icon-star-empty"></i> '+p+'<br></a>');
 			}
 		}
 	}
 	
 	var loadMudconnectList = function() {
 		
-		if (Config.solo || Config.clean)
+		if (Config.solo || Config.clean || touch)
 			return;
 			
 		j.get('/app/xml/mudconnect.xml', function(d) {
@@ -55,7 +66,14 @@ var ControlPanel = function () {
 			tmc = j(d).find('mud');
 			
 			tmc = tmc.sort(function(a, b) {
-				return j(a).find('title').text() > j(b).find('title').text()
+			    
+				a = j(a).find('title').text();
+			    b = j(b).find('title').text();
+			    
+				if (a < b) return -1;
+			    if (a > b) return 1;
+			    return 0;
+			    
 			});
 			
 			var thumb = '';
@@ -65,7 +83,7 @@ var ControlPanel = function () {
 				var host = j(tmc[g]).find('host').text();
 				var port = j(tmc[g]).find('port').text();
 				if (name.length && host.length && port.length)
-					j(id + ' .gamelist .tmc').append('<a style="display:none" class="tmc-link game-link" host="'+host+'" port="'+port+'" thumb="'+thumb+'">'+name+'<br></a>');
+					j(id + ' .gamelist .tmc').append('<a style="display:none" class="tmc-link game-link" host="'+host+'" port="'+port+'" thumb="'+thumb+'" name="'+name+'">'+name+'<br></a>');
 			}
 		});
 	}
@@ -75,6 +93,7 @@ var ControlPanel = function () {
 		j(id + ' .gamelist').append('<div class="sitelist"><a class="big-list folder" data="game-link"><i class="icon-folder-open-alt"></i> Site List<br></a></div>');
 
 		for (g = 0; g < d.length; g++) {
+			
 			try {
 					var el = d[g].elements.replace(/&amp;/g, '&');
 					var play = el.match(/\[play=(.+?)\]/)[1].replace(/\\\//g, '/');
@@ -98,12 +117,10 @@ var ControlPanel = function () {
 				
 				d[g].img = '/'+el.match(/"(images\\\/.+?\.(png|gif|jpg))"/i)[1].replace(/\\\//g, '/');
 				
-				j(id + ' .sitelist').append('<a class="game-link" data="'+g+'" host="'+d[g].host+'" port="'+d[g].port+'" thumb="'+d[g].img+'">'+d[g].name+'<br></a>');
-				
+				j(id + ' .sitelist').append('<a class="game-link" data="'+g+'" host="'+d[g].host+'" port="'+d[g].port+'" thumb="'+d[g].img+'" name="'+d[g].name+'"><i class="icon-sun"></i> '+d[g].name+'<br></a>');
 				
 			} catch(ex) { log(d[g]) }
 		}
-
 	}
 	
 	var loadGamelist = function() {
@@ -115,7 +132,7 @@ var ControlPanel = function () {
 
 	loadGamelist();
 
-	j(id).on('click', '.tmc', function(e) {
+	j(id).on('dblclick', '.tmc', function(e) {
 		e.stopPropagation();
 		j('.tmc .folder').click();
 		j('.gamelist').scrollTop(0);
@@ -138,25 +155,24 @@ var ControlPanel = function () {
 			i.removeClass('icon-folder-close-alt');
 		}
 		
-		//setTimeout(function() {
-			j('.gamelist').getNiceScroll().resize();
-		//}, 2000);
-		
+		j('.gamelist').getNiceScroll().resize();
 	});
 	
 	j(id).on('click', ' .game-link, .profile-link', function(e) {
 		
 		e.stopPropagation();
+
+		j('.gamelist a').removeClass('game-link-selected');
+		j(this).addClass('game-link-selected');
 		
 		var profile = j(this).hasClass('profile-link');
-		
 		var tmclink = j(this).hasClass('tmc-link');
 		
 		var t = j(id + ' .gamepanel');
 		
 		t.removeAttr('profile');
 		
-		var name = j(this).text();
+		var name = j(this).attr('name');
 		var host = j(this).attr('host');
 		var port = j(this).attr('port');
 		var thumb = j(this).attr('thumb');
@@ -175,7 +191,11 @@ var ControlPanel = function () {
 		
 		t.empty();
 		
-		t.append('<div class="left" style="padding: 4px 18px 0px 4px"><img class="game-thumb" src="'+thumb+'"></div><div class="left" style="padding-top: 4px">'+name+'<div style="height: 8px; clear: both"></div>'+url);
+		t.append('<div class="left game-blurb" style="padding: 4px 18px 0px 4px"><img class="game-thumb" src="'+thumb+'"></div><div class="left" style="padding-top: 4px">'+name+'<div style="height: 8px; clear: both"></div>'+url);
+		
+		if (mobile) {
+			return;
+		}
 		
 		if (profile)
 			t.append('<br>\
@@ -206,7 +226,7 @@ var ControlPanel = function () {
 		j(id + ' .gamepanel #macros').append('Macros support arguments (wildcards) in the format $1, $2... $*. The macro "$me -> Myname" will replace $me with Myname in any other macros or triggers.<br><br><a class="right kbutton macro-add"><i class="icon-plus"></i> new</a><div class="scroll"></div>');	
 		j(id + ' .gamepanel #triggers').append('Triggers support wildcards in the format $1, $2... $9.<br><br><a class="right kbutton trigger-add"><i class="icon-plus"></i> new</a><div class="scroll"></div>');	
 
-		if (user.id && pref) {
+		if (window.user.id && pref) {
 	
 			if (pref.sitelist && pref.sitelist[name])
 				var G = pref.sitelist[name];
@@ -235,25 +255,28 @@ var ControlPanel = function () {
 		}
 		
 		var t = j(id + ' .gamepanel #settings .scroll');
-		t.append('Auto-load official plugins:  <i class="icon-check" id="official"></i><br>');
-		t.append('Echo commands to main window:  <i class="icon-check" id="echo"></i><br>');
-		t.append('Keep last command in input:  <i class="icon-check" id="keepcom"></i><br>');
-		t.append('Enable MXP:  <i class="icon-check" id="mxp"></i><br>');
+		t.append('<i class="icon-check" id="official"></i> Auto-load official plugins<br>');
+		t.append('<i class="icon-check" id="echo"></i> Echo commands to main window<br>');
+		t.append('<i class="icon-check" id="keepcom"></i> Keep last command in input<br>');
+		t.append('<i class="icon-unchecked" id="spellcheck"></i> Spellcheck command input<br>');
+		t.append('<i class="icon-check" id="mxp"></i> Enable MXP<br>');
+		t.append('<i class="icon-unchecked" id="automulti"></i> Auto-paste multiline selects in multiline input<br>');
 		
 		if (G && G.settings)
 			for (var s = 0; s < G.settings.length; s++)
 				if (!G.settings[s].value)
 					j(id + ' #settings ' + '#'+G.settings[s].id).removeClass('icon-check').addClass('icon-unchecked');
+				else
+					if (G.settings[s].value)
+						j(id + ' #settings ' + '#'+G.settings[s].id).removeClass('icon-unchecked').addClass('icon-check');	
 
 		j('.gamepanel .scroll').css({ height: '280px' });
 		
-		j('.gamepanel .scroll').niceScroll({ 
-			cursorborder: 'none', 
-			touchbehavior: 1
-		});
-		
-		j('.gamelist a').removeClass('game-link-selected');
-		j(this).addClass('game-link-selected');
+		if (!Config.touch)
+			j('.gamepanel .scroll').niceScroll({ 
+				cursorborder: 'none', 
+				cursorwidth: '7px'
+			});
 		
 	});
 
@@ -273,10 +296,11 @@ var ControlPanel = function () {
 		if (j(id + ' .game-link:first').length)
 			j(id + ' .game-link:first').click();
 	
-	j(id + ' .nice').niceScroll({ 
-		cursorborder: 'none', 
-		touchbehavior: 1
-	});
+	if (!Config.touch)
+		j(id + ' .nice').niceScroll({ 
+			cursorborder: 'none', 
+			cursorwidth: '7px'
+		});
 	
 	j(id).on('click', 'a.macro-add', function() {
 		var t = j(this).parent().find('.scroll');
@@ -323,13 +347,13 @@ var ControlPanel = function () {
 			
 	j(id).on('click', '.save', function() {
 
-		if (!user.id) {
+		if (window.user.guest) {
 			new Modal({
 				title: 'Unsupported Action',
 				text: 'Please register or login to be able to save your game preferences.',
 				buttons: [
 				    {
-				    	text: 'Nah',
+				    	text: 'No, thanks',
 				    	click: function() {
 				    		j('#modal').modal('hide');
 				    	}
@@ -438,7 +462,7 @@ var ControlPanel = function () {
 	
 	j(id).on('click', '.clone', function() {
 		
-		if (!user.id) {
+		if (window.user.guest) {
 			new Modal({
 				title: 'Unsupported Action',
 				text: 'Please register or login to be able to create game profiles.',
@@ -489,5 +513,159 @@ var ControlPanel = function () {
 		j.post('?option=com_portal&task=set_pref', { pref: stringify(user.pref) });
 		loadGamelist();
 		j(id + ' .gamelist').getNiceScroll().resize();
+	});
+	
+	/* begin portal chat */
+	
+	var linkify = function(a) {
+		return a.replace(/(http.*:\/\/[^\s]+)/gi,'<a href="$1" target="_blank">$1</a>');
+	}
+	
+	var closeChat = function() {
+		j(id + ' .chat-panel').remove();
+		if (nice)
+			nice.remove();
+		if (user.channel)
+			delete user.channel;
+	}
+	
+	j(id).on('click', '.chat-link', function(e) {
+		
+		var channel = j(this).attr('data');
+		
+		if (mychannel && mychannel == channel)
+			return;
+
+		if (mychannel)
+			closeChat();
+
+		j(id + ' .gamepanel').html('<div class="chat-panel"><!--<div class="chat-title right" style="color:#01c8d4;opacity:0.6">'+channel.toUpperCase()+'</div>--><div class="chat-main chat-'+channel+'" style="width: 100%; height: 440px"></div>\
+			<div class="input" style="width: 95%;height: 30px;margin-right: 40px; position: absolute; bottom: 34px;"><input class="chat-send send" autocomplete="on" spellcheck="'+(Config.getSetting('spellcheck')?'true':'false')+'" title="Type a chat message in this field and press \'Enter\' to send it." placeholder="type your message..." aria-live="polite"/></div>\</div>');
+		
+		nice = j(id + ' .chat-'+channel).niceScroll({ 
+			cursorwidth: 7,
+			cursorborder: 'none'
+		});
+		
+		j('.gamelist a').removeClass('game-link-selected');
+		j(this).addClass('game-link-selected');
+		
+		mychannel = channel;
+		chatUpdate();
+		
+		j(id + ' .chat-send').focus();
+	});
+	
+	j(id).on('click', '.chat-main', function() {
+		j(id + ' .chat-send').focus();
+	});
+	
+	var chatUpdate = function(i) {
+
+		var c = j('.chat-'+mychannel);
+		
+		if (!i) {
+			c.empty();
+			chatlog.map(function(i) {
+				if (mychannel == i[1].channel)
+					c.append('<span style="opacity: 0.6">'+i[0].substr(11,5)+'</span> <span style="color: #01c8d4;opacity:0.7">'+i[1].name+': </span>'+linkify(i[1].msg)+'<br>');
+				else
+				if (i[1].channel == 'status')
+					c.append('<span style="opacity: 0.6">'+i[0].substr(11,5)+'</span> <span style="color: #FFEB9E;opacity:0.6">'+i[1].name+' </span><span style="opacity: 0.7">'+linkify(i[1].msg)+'</span><br>');
+			});
+		}
+		else
+			if (mychannel == i[1].channel) {
+				c.append('<span style="opacity: 0.6">'+i[0].substr(11,5)+'</span> <span style="color: #01c8d4;opacity:0.7">'+i[1].name+': </span>'+linkify(i[1].msg)+'<br>');
+			}
+		
+		c.scrollTop(c.prop("scrollHeight"));
+	}
+
+	j(id).on('keydown', '.chat-send', function(e) {
+		if (e.which == 13) { /* enter */
+			e.preventDefault();
+			if (j(this).val().length) {
+				chat.send(stringify({
+					chat: 1,
+					name: user.username||'Guest',
+					channel: mychannel,
+					msg: j(this).val()
+				}));
+				j(this).val('');
+			}
+		}
+	});
+	
+	Event.listen('socket_open', function(c) {
+		
+		log('Event: socket_open');
+		
+		if (c == chat) {
+			
+			chat.send(stringify({
+				chat: 1,
+				name: user.username||'Guest',
+				channel: 'op',
+				msg: 'joined chat.'
+			}));
+			
+			j(id + ' .gamelist').prepend('<div class="chatlist"><a class="chat-list folder" data="chat-link"><i class="icon-folder-open-alt"></i> Portal Chat<br></a></div>');
+			var chan = ['Lobby', 'Players', 'Devs'];
+			
+			for (var i = 0; i < chan.length; i++)
+				j(id + ' .chatlist').append('<a class="chat-link" data="'+chan[i]+'"><i class="icon-comment-alt"></i> '+chan[i]+'<br></a>');
+		}
+		else {
+			dump(c);
+			dump(chat);
+		}
+	});
+	
+	Event.listen('socket_data', function(d, c) {
+
+		if (!d.has('portal.chat'))
+			return d;
+		
+		dump(c);
+		dump(d);
+		
+		var key = d.match(/([^ ]+?) /)[1];
+		var value = d.match(/[^ ]+? (.*)/)[1];
+		
+		if (key == 'portal.chatlog') {
+			chatlog = eval('('+value+')');
+			chatUpdate();
+		}
+		else if (key == 'portal.chat') {
+			var i = [new Date().toISOString(), eval('('+value+')')];
+			new Audio('/app/sound/blop.mp3').play();
+			chatlog.push(i);
+			chatUpdate(i);
+		}
+		
+		return null;
+	});
+	
+	Event.listen('socket_before_close', function(c) {
+		if (c == chat) {
+			chat.send(stringify({
+				chat: 1,
+				name: user.username||'Guest',
+				channel: 'op',
+				msg: 'left chat.'
+			}));
+		}
+	});
+	
+	Event.listen('socket_close', function(c) {
+		if (c == chat) {
+			j(id + ' .chatlist').remove();
+			closeChat();
+		}
+	});
+	
+	var chat = new Socket({
+		type: 'chat'
 	});
 }

@@ -9,8 +9,8 @@ var Colorize = function (o) {
 	var xterm;
 	
 	var ansi = {
-		'30':   	'#000',	  //black
-		'1;30':		'#525252', //bright black
+		'30':   	'#000',	   //black
+		'1;30':		'#6E6E6E', //bright black
 		'31':		'#bf1b00', //red
 		'1;31':		'#ff193f', //bright red
 		'32':		'#00ac00', //green
@@ -24,9 +24,9 @@ var Colorize = function (o) {
 		'36':		'#01c8d4', //cyan
 		'1;36':		'#5bedf6', //bright cyan
 		'37':		'#dbdbdb', //off-white
-		'1;37':		'#fff',	  //bright white
+		'1;37':		'#fff; font-weight: bold',	  //bright white
 		'39': 		'#dbdbdb'  //default
-	},	
+	},
 	
 	bgansi = {
 		'40': 'Black',
@@ -106,19 +106,14 @@ var Colorize = function (o) {
 			//log(c);
 			
 			for (var a = 0; a < c.length; a++) {
-				
-				if (c[a] == '1') {
+				if (c[a] == '1')
 					bold = 1;
-					break;
-				}
 				else
 				if (c[a] == '3')
-					bold = ' font-style: italic;';
+					italic = ' font-style: italic;';
 				else
 				if (c[a] == '7')
 					flip = 1;
-				else
-					bold = '';
 			}
 			
 			for (var a = 0; a < c.length; a++) {
@@ -136,9 +131,8 @@ var Colorize = function (o) {
 				}
 				else
 				if (!xterm && ansi[c[a]]) {
-					if (bold) {
+					if (bold)
 						color = 'color:'+ansi['1;'+c[a]]+';';
-					}
 					else
 						color = 'color:'+ansi[c[a]]+';';
 				}
@@ -155,9 +149,9 @@ var Colorize = function (o) {
 				v += '</span>';
 			
 			if (color || bgcolor || bold || italic)
-				v += '<span style="'+color+bgcolor+bold+italic+'">';
+				v += '<span style="'+color+bgcolor+italic+'">';
 			
-			//log(v);
+			log(v);
 			
 			var re = new RegExp(m[i].replace(/\[/g, '\\['), 'g');
 			t = t.replace(re, v);

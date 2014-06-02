@@ -1,12 +1,13 @@
 var Socket = function(o) {
 	
-	var self = this, ws = {}, out = o.out, connected = 0;	
-	var proxy = param('ws')?('ws://'+param('ws')+'/'):'ws://www.mudportal.com:6200/';
+	var self = this, ws = {}, out = o.out||Config.ScrollView, connected = 0;	
+	var proxy = o.proxy||'ws://www.cloudgamer.org:6200/';
+	o.type = o.type||'telnet';
 	var host = o.host, port = o.port;
 	var buff = '';
-	var cmds = [], cmdi = 0;
 	var z_lib, z_stream, z_raw, utf8;
 	var colorize = new Colorize();
+	var cmds = [], cmdi = 0, echo = 1;
 	var keepcom = (Config.getSetting('keepcom') == null || Config.getSetting('keepcom') == 1);
 	
 	var prot = {
@@ -33,36 +34,67 @@ var Socket = function(o) {
 	
 	var onOpen = function(evt) {
 		
+		log('Socket: connected');
+		
 		connected = 1;
 		
-		var opt = {
-			host: o.host,
-			port: o.port,
-			utf8: 1,
-			mxp: 1,
-			connect: 1,
-			mccp: 1,
-			debug:	Config.debug
-		};
+		if (!o.proxy && o.type == 'telnet') {
+			ws.send(stringify({
+				host: o.host,
+				port: o.port,
+				utf8: 1,
+				mxp: 1,
+				connect: 1,
+				mccp: Config.device.mobile?0:1,
+				debug:	Config.debug,
+				client: o.client,
+				ttype: o.ttype,
+				name: user.username||'Guest'
+			}));
+		}
+
+		if (o.onOpen)
+			o.onOpen(evt);
 		
-		ws.send(stringify(opt));
-		out.title(host + ':' + port);
+		Event.fire('socket_open', self);
 		
 		setInterval(function() {
-			ws.send('{ ping: 1 }');
-		}, 5000);
+			ws.send('{ "ping": 1 }');
+		}, 10000);
+		
 	}
 	
 	var onClose = function(evt) {
+		
+		Event.fire('socket_before_close', self);
+
 		ws.close();
+		
 		connected = z_lib = 0;
+		
 		if (z_stream)
 			ZLIB.inflateEnd(z_stream);
-		out.add('<br><span style="color: green;">Remote server has disconnected. Refresh page to reconnect.</span><br>');
-		//setTimeout(function() { connect() }, 3000);
+		
+		if (out)
+			out.add('<span style="color: green;">Remote server has disconnected. Refresh page to reconnect.<br></span>');
+		
+		if (o.onClose)
+			o.onClose(evt);
+		
+		Event.fire('socket_close', self);
+		
+		log('Socket: closed');
 	}
 
 	var onMessage = function (e) {
+		
+		if (Event.q['socket_data']) {
+			var raw = e.data;
+			raw = Event.fire('socket_data', raw, self);
+			//log('after socket_data raw is '+raw);
+			if (!raw)
+				return;
+		}
 		
 		if (!z_lib) {
 			try {
@@ -100,31 +132,42 @@ var Socket = function(o) {
 	}
   
 	var	onError = function(evt) {
-		out.add('<span style="color: red;">Error: telnet proxy may be down.</span><br>');
+		out.add('<span style="color: red;">Error: telnet proxy may be down.<br></span>');
 	}
 
+	var getHistory = function() {
+		//log(cmds);
+		return cmds;	
+	}
+	
 	var send = function(msg) {
 
-		//console.log('Socket.send');
+		console.log('Socket.send');
+		
+		log(msg);
+		
 		msg = msg.trimm();
 		msg = Event.fire('before_send', msg, self);
-		if (!msg.has('macro') && !msg.has('alias'))
-			msg = msg.replace(/\;/g, '\r\n');
+		
+		if (!msg.has('macro') && !msg.has('alias') && !msg.has('trig') && Config.separator.length) {
+			var re = new RegExp(Config.separator, 'g');
+			msg = msg.replace(re, '\r\n');
+		}
 		
 		if (ws.send && connected)
 			ws.send(msg + '\r\n');
-		else
-			out.add('<span style="color: green;">WARNING: please connect first.</span><br>');
-		
-		out.echo(msg);
-		cmds.push(msg);
+		else 
+			if (out)
+				out.add('<span style="color: green;">WARNING: please connect first.<br></span>');
+		if (out)
+			out.echo(msg);
 	}
 	
 	var sendBin = function(msg) {
 		log('Socket.sendBin: ' + msg);
 		ws.send(stringify({ bin: msg }));
 	}
-	
+	/*
 	var multiprocess = function()  {
 		var i = 0, limit = 100, processing = 0, busy = 0;
 		var processor = setInterval(function() {
@@ -136,7 +179,7 @@ var Socket = function(o) {
 				busy = 0;
 			}
 		}, 100);
-	}
+	}*/
 	
 	var process = function() {
 
@@ -162,10 +205,7 @@ var Socket = function(o) {
 			return '';
 		}
 		
-		
 		t = Event.fire('before_process', t);
-		
-		t = t.replace(/\n/g,'');
 
 		/*
 		 if (t.has('\x01') && Config.debug)
@@ -203,6 +243,7 @@ var Socket = function(o) {
 				for (i = 0; i < m.length; i++) {
 					var d = m[i].substring(3, m[i].length-2);
 					Event.fire('gmcp', d);
+					log("gmcp: "+d);
 					t = t.replace(m[i], '');
 				}
 			}
@@ -231,25 +272,35 @@ var Socket = function(o) {
 		t = t.replace(/([^\x1b])>/g,'$1&gt;');
 		t = t.replace(/\x1b>/g,'>');
 		t = t.replace(/\x1b</g,'<');
-		
-		t = Event.fire('before_html', t, self);
-		t = Event.fire('internal_colorize', t, self);
-		
-		//log('before negotiation cleanup: '+t);
 
 		if (t.has('\xff\xfb\x01')) {
+			
 			log('IAC WILL ECHO');
+	
 			if (Config.ScrollView)
 				Config.ScrollView.echoOff();
+
+			t = t.replace(/\xff.\x01/g,'');
 		}
 		
 		if (t.has('\xff\xfc\x01')) {
+			
 			log('IAC WONT ECHO');
+
 			if (Config.ScrollView)
 				Config.ScrollView.echoOn();
+
+			t = t.replace(/\xff.\x01/g,'');
 		}
 		
-		t = t.replace(/\xff\xfa..\xff\xf0/g,'');
+		if (t.has('\x07'))
+			new Audio('/app/sound/ding.mp3').play();
+		
+		t = Event.fire('before_html', t, self);
+		t = t.replace(/([^"'])(http.*:\/\/[^\s\x1b"']+)/g,'$1<a href="$2" target="_blank">$2</a>');
+		t = Event.fire('internal_colorize', t, self);
+		
+		t = t.replace(/\xff\xfa.+\xff\xf0/g,'');
 		t = t.replace(/\xff(\xfa|\xfb|\xfc|\xfd|\xfe)./g,'');
 		t = t.replace(/\x07/g,''); //bell
 		t = t.replace(/\x1b\[1;1/g,''); //clear screen
@@ -257,7 +308,6 @@ var Socket = function(o) {
 		t = t.replace(/\x1b\[[A-Z0-9]/gi,''); //erase unsupported ansi control data
 		t = t.replace(';0;37',''); //erase unsupported ansi control data
 		//t = t.replace(/\x1b/g,'');
-		t = t.replace(/([^"'])(http.*:\/\/[^\s\x1b"']+)/g,'$1<a href="$2" target="_blank">$2</a>');
 		
 		 /* orphaned escapes still possible during negotiation */
 		if (t.match(/^\x1b+$/))
@@ -265,9 +315,10 @@ var Socket = function(o) {
 		
 		t = t.replace(/\uFFFF/gi,''); /* utf-8 non-character */
 
-		t = t.replace(/\xff.\x01/g,''); //echo off
-		
 		//console.log('before_display: '+t);
+
+		t = t.replace(/\r/g,'');
+		t = t.replace(/\n/g,'<br>');
 		
 		t = Event.fire('before_display', t);
 
@@ -275,6 +326,7 @@ var Socket = function(o) {
 	}
 	
 	var connect = function() {
+		log('Socket: connecting');
 		ws = new WebSocket(proxy);
 		ws.onopen = function(e) { onOpen(e) };
 		ws.onclose = function(e) { onClose(e) };
@@ -286,81 +338,21 @@ var Socket = function(o) {
 		out.echo(msg);
 	}
 
-	if (param('ws'))
-		out.add('<br><span style="color: green;">Setting websocket proxy to '+param('ws')+'.</span><br>');
-	
-	connect();
-	
-	if (Config.Device.touch) {
-		
-		j(out.id + ' .send').blur(function() {
-			if (j(this).val().length) {
-				var v = j(this).val();
-				send(v);
-				cmdi++;
-				//this.setSelectionRange(0, 9999);
-				if (keepcom)
-					this.select();
-				else
-					j(this).val('');
-			}
-			else ws.send('\r\n');
-		});
-		
-		j(out.id + ' .send').focus(function() {
-			//this.setSelectionRange(0, 9999);
-			this.select();
-		});
-	}
-	
-	j(out.id + ' .send').focus().keydown(function(e) {
-	
-		if (e.which == 13) { /* enter */
-			
-			e.preventDefault();
-			
-			if (j(this).val().length) {
-				var v = j(this).val();
-				send(v);
-				cmdi++;
-				//this.setSelectionRange(0, 9999);
-				if (keepcom)
-					this.select();
-				else
-					j(this).val('');
-			}
-			else ws.send('\r\n');
-			
-		}
-		else if (e.keyCode == 38) { /* arrow up */
-			
-			e.preventDefault();
-			
-			if (cmdi)
-				j(this).val(cmds[--cmdi]);
-			this.select();
-			//this.setSelectionRange(0, 9999);
-		}
-		else if (e.keyCode == 40) { /* arrow down */
-			
-			e.preventDefault();
-			
-			if (cmdi < cmds.length-1)
-				j(this).val(cmds[++cmdi]);
-			
-			this.select();
-			//this.setSelectionRange(0, 9999);
-		}
-	});
-	
+	if (o.proxy && out)
+		out.add('<span style="color: green;">Setting websocket proxy to '+o.proxy+'.<br></span>');
+
 	var self = {
 		send: send,
 		sendBin: sendBin,
 		echo: echo,
-		write: function(d) { if (connected) ws.send(d + '\r\n') },
-		getProxy: function() { return proxy }
+		write: function(d) { if (connected) { ws.send(d + '\r\n'); log('Socket.write: '+d) } },
+		getProxy: function() { return proxy },
+		getSocket: function() { return ws },
+		connected: function() { return connected }
 	}
 	
+	connect();
+
 	Config.socket = Config.Socket = self;
 	return self;
 	

@@ -16,8 +16,6 @@ var MXP = function () {
 			mxp = 1;
 		}
 
-		t = t.replace(/ÿú\[ÿð/, ''); 
-
 		if (!mxp)
 			return t;
 		
@@ -102,26 +100,13 @@ var MXP = function () {
 			position: 'fixed'
 		});
 		
-		/*
-		j(src).parent().on('click', function() {
-			setTimeout( function () {
-				j('.mxp-dropdown').remove();
-			}, 400);
-			return true;
-		});
-		
-		j(src).parent().next().on('click', function() {
-			j('.mxp-dropdown').remove();
-			return true;
-		});*/
-		
 		j('input').on('mouseover', function() {
 			j('.mxp-dropdown').remove();
 		});
 	}
 	
 	j('body').on('click', '.mxp', function(evt) {
-		
+
 		j('.mxp-dropdown').remove();
 		//console.log('mxp click');
 		var href;

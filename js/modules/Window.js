@@ -3,9 +3,21 @@ var Window = function(o) {
 	var id, h, position, width, height, maximized, opt;
 	var minZ = 100;
 	var view_id = Config.view;
-
+	
+	o.css = o.css||{
+		height: 380,
+		width: 380
+	}
+	
+	o.id = o.id||'#scroll-view';
+	
+	if (Config.device.touch) {
+		o.noresize = 1;
+		o.handle = '.none';
+	}
+	
 	var button = function(o) {
-		j(id + ' .toolbar').append('<i class="icon '+o.icon+'" title="'+o.title+'"></i>');
+		j(id + ' .toolbar').append('<i class="icon '+o.icon+' tip" title="'+o.title+'"></i>');
 		j(id + ' .'+o.icon).click(o.click); 
 	}
 	
@@ -16,6 +28,7 @@ var Window = function(o) {
 	var init = function(o) {
 		
 		opt = o;
+		opt.tabs = [];
 		id = o.id;
 		
 		log('Window.init: '+id);
@@ -31,13 +44,13 @@ var Window = function(o) {
 		if (!o.handle) {
 			j(o.id).prepend('\
 			<div class="handle toolbar">\
-			<div class="title" style="width: 96%; text-align: center">'+(o.title||'&nbsp;')+'</div>\
+			<div class="title" style="width: 100%; text-align: center; text-overflow: ellipsis;">'+(o.title||'&nbsp;')+'</div>\
 			</div>');
 			o.handle = '.handle';
 		}
 		else {
 			j(o.id + ' .content').css({ 
-				top: -20,
+				top: -38,
 				height: '106%'
 			});
 		}
@@ -51,6 +64,7 @@ var Window = function(o) {
 				'top': 0,
 				'padding': 0
 			});
+			j(id).css('border', 'none');
 		}
 		
 		if (o.closeable)
@@ -70,32 +84,25 @@ var Window = function(o) {
 			click: collapse
 		});
 		
+		/*
 		if (o.max) {
 			button({
 				icon: 'icon-unchecked',
-				title: 'Maximize this window.',
+				title: 'Max/minimize this window.',
 				click: maximize
 			});
-			
-			button({
-				icon: 'icon-columns',
-				title: 'Un-minimize this window.',
-				click: minimize
-			});
-			
-			j(id + ' .icon-columns').hide();
-
 			j(window).resize(function() {
 				if (maximized)
 					maximize();
 			});
-		}
+		}*/
 		
 		if (o.transparent)
 			o.handle = '.content';
 		
+		if (!Config.device.mobile && !param('kong'))
 		j(id)
-			.draggable({
+		.draggable({
 				/*stack: ".ui-group",*/
 				handle: o.handle,
 				snap: 1,
@@ -105,23 +112,24 @@ var Window = function(o) {
 					savepos();
 				}
 			})
-			.css({
-				'display':'inline-block',
-				'overflow':'hidden',
-				'paddingBottom':'12px'
-			})
-			.click(function() {
-				log('Window.click');
-				front();
-			});
+		.click(function() {
+			//log('Window.click');
+			front();
+		});
+
+		//j(id + ' .handle').dblclick(collapse);
 		
-		j(id + ' .handle').dblclick(collapse);
+		j(id)
+		.css({
+			'overflow':'hidden',
+		});
 		
 		if (!o.noresize) {
 			j(id).resizable({
 				minWidth: 60,
 				width: 300,
 				stop: function(e, u) { 	
+					//j(id + ' .content').height(j(o.id).height()-12);
 					j(id + ' .nice').getNiceScroll().resize();
 					j('.nicescroll-rails').css('z-index', j(id).css('z-index'));
 					savepos();
@@ -148,11 +156,15 @@ var Window = function(o) {
 		
 		if (Config.collapse.has(id))
 			collapse();
-		
+
+		for (var i = 0; i < o.tabs.length; i++)
+			tab(o.tabs[i]);
+					
 		/* attempt to restore window position and size */
 		var default_pos = getpos(o);
+		
 		j(id).css(o.css);
-
+		//j(id + ' .content').height(j(id).height()-12);
 	}
 	
 	var maximize = function() {
@@ -163,13 +175,13 @@ var Window = function(o) {
 		
 		j(id).css({
 			width: j(window).width(),
-			height: j(window).height()-20,
+			height: j(window).height(),
 			top: 0,
 			left: 0
 		});
 		
-		j(id + ' .icon-unchecked').hide();
-		j(id + ' .icon-columns').show();
+		//j(id + ' .icon-unchecked').hide();
+		//j(id + ' .icon-columns').show();
 		front();
 		
 		maximized = 1;
@@ -184,8 +196,8 @@ var Window = function(o) {
 			left: position.left
 		});
 		
-		j(id + ' .icon-unchecked').show();
-		j(id + ' .icon-columns').hide();
+		//j(id + ' .icon-unchecked').show();
+		//j(id + ' .icon-columns').hide();
 		j(id + ' .out').scrollTop(j(id + ' .out')[0].scrollHeight);
 		
 		maximized = 0;
@@ -196,15 +208,17 @@ var Window = function(o) {
 		if (j(id + ' .content').hasClass("hidden")) {
 			j(id + ' .handle').siblings().removeClass('hidden');
 			j(id + ' .icon-plus').addClass('icon-minus').removeClass('icon-plus').attr('title', 'Collapse this window.');
+			j(id).css('border', '0.5px solid rgba(255, 255, 255, 0.1)');
 		}
 		else {
 			j(id + ' .handle').siblings().addClass('hidden');
 			j(id).css('z-index', minZ - 1);
 			j(id + ' .icon-minus').addClass('icon-plus').removeClass('icon-minus').attr('title', 'Expand this window.');
-			return false;
+			j(id).css('border', 'none');
 		}
 		
 		savepos();
+		return false;
 	}
 	
 	var front = function() {
@@ -238,17 +252,18 @@ var Window = function(o) {
 		
 		Z.push({ id: id, z: 0 });
 		
-		if (myZ < Z[Z.length-2].z) {
-			for (var i = 0; i < Z.length; i++)
-				j(Z[i].id).css('z-index', minZ + i);
-			log('Window.front(ed): ' + id);
-			savepos();
-		}
+		for (var i = 0; i < Z.length; i++)
+			j(Z[i].id).css('z-index', minZ + i);
+	
+		Config.front = id;
+		
+		log('Window.front(ed): ' + id);
+		savepos();
 	}
 	
 	var savepos = function() {
 		
-		if (!user.id || !Config.host)
+		if (!user.id || !Config.host || param('kong'))
 			return;
 			
 		if (!user.pref.win)
@@ -256,20 +271,17 @@ var Window = function(o) {
 		
 		user.pref.win[view_id] = {};
 		
-		j(id).parent().children().each(function() {
-			
-			if (j(this).hasClass('window')) {
+		j('.window').each(function() {
 	
-				user.pref.win[view_id]['#'+j(this).attr('id')] = {
-					offset: j(this).offset(),
-					width: j(this).width(),
-					height: j(this).height(),
-					zIndex: parseInt(j(this).css('z-index')),
-					collapsed: j(this).find('.content').hasClass('hidden')
-				};
-				
-				log('Saving window position: ' + stringify(user.pref.win[view_id]['#'+j(this).attr('id')]));
-			}
+			user.pref.win[view_id]['#'+j(this).attr('id')] = {
+				offset: j(this).offset(),
+				width: j(this).width(),
+				height: j(this).height(),
+				zIndex: parseInt(j(this).css('z-index')),
+				collapsed: j(this).find('.content').hasClass('hidden')?1:0
+			};
+			
+			log('Saving window position: ' + stringify(user.pref.win[view_id]['#'+j(this).attr('id')]));
 		});
 	
 		j.post('?option=com_portal&task=set_pref', { pref: stringify(user.pref) });	
@@ -277,13 +289,10 @@ var Window = function(o) {
 	
 	var getpos = function(o) {
 
-		//log('Restoring saved position: '+id);
-		
-		if (!user.id || !user.pref.win || !Config.host)
+		if (!user.id || !user.pref || !user.pref.win || !Config.host || param('kong'))
 			return 1;
 		
-		if (!user.pref.win[view_id] || !user.pref.win[view_id][id])
-			return 1;
+		log('Restoring saved position: '+o.id);
 		
 		var prefs = user.pref.win;
 		
@@ -298,14 +307,11 @@ var Window = function(o) {
 			}
 		}
 
-		if (!user.pref.win[view_id])
+		if (!user.pref.win[view_id] || !user.pref.win[view_id][o.id])
 			return 1;
-			
-		var pref = user.pref.win[view_id][id];
-		 
-		if (!o.css)
-			o.css = {};
-			
+		
+		var pref = user.pref.win[view_id][o.id];
+	
 		o.css.left = (pref.offset.left < 0)?0:pref.offset.left;
 		o.css.top = (pref.offset.top < 0)?0:pref.offset.top;
 		o.css.width = pref.width;
@@ -318,6 +324,40 @@ var Window = function(o) {
 		log(stringify(o));
 		
 		return 0;
+	}
+	
+	var tab = function(t) {
+		
+		var i = o.tabs.length;
+		o.tabs.push(t);
+
+		if (!j(o.id + ' .content .tabs').length) {
+			j(o.id + '.content').prepend('\
+				<ul class="tabs nav nav-tabs"></ul>\
+				<div class="tab-content"></div>');
+			j(o.id + ' .content').css('background-color', 'transparent');
+			j(o.id + ' .tabs:hover').css({ cursor: move });
+		}
+		
+		var html = '<li><a class="kbutton '+t.name+'" data-toggle="tab" href="#tab-'+i+'">'+t.name+'</a></li>';
+		
+		if (!t.after)
+			j(o.id + ' .tabs').append(html);
+		else
+			j(html).insertAfter(j(o.id + ' .chat-tabs .'+t.after).parent());
+		
+		j(o.id + ' .tab-content').append('<div id="tab-'+i+'" class="tab-pane nice'+(i==0?' active':'')+'">'+(t.html||'')+'</div>');
+		
+		j('#tab-'+i).css({
+			width: j(o.id).width() - 10,
+			height: j(o.id).height() - 50,
+		})
+		.niceScroll({ 
+			cursorborder: 'none', 
+			touchbehavior: 1
+		});
+		
+		return o.id + ' #tab-' + i;
 	}
 	
 	init(o);

@@ -38,7 +38,7 @@ var MacroPane = function(o) {
 		
 		socket.echo('Loaded ' + buttons.length + ' macros.');
 		
-		if (!o.noquickbuttons)
+		if (!o.noquickbuttons && !Config.nocenter)
 			pane();
 		
 		first = 0;
@@ -46,6 +46,9 @@ var MacroPane = function(o) {
 	
 	var pane = function() {
 
+		if (Config.device.mobile)
+		 return;
+		 
 		j(id).remove();
 		
 		if (!buttons.length)

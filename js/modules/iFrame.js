@@ -24,23 +24,21 @@ var iFrame = function(o) {
 			'class': 'nofade',
 			css: o.css,
 			onResize: function() {
-				j(o.id + ' iframe').css({
-					width: j(o.id + ' .content').width(),
-					height: j(o.id + ' .content').height()
-				})
+				j(o.id + ' .content').height(j(o.id).height()-16);
 			},
 			onClose: function() {
 				clearInterval(refresh);
 			}
 		});
 		
-		j(o.id + ' .content').append('<iframe src="'+o.url+'" class="nice" style="overflow: auto; height: 100%" frameBorder="0"><iframe>');
-	
+		j(o.id + ' .content').append('<iframe src="'+o.url+'" style="overflow: hidden; height: 100%; width: 100%; padding: 0px; margin: 0px auto;" frameBorder="0"><iframe>');
+		j(o.id + ' .content').height(j(o.id).height()-20);
+		/*
 		j(o.id + ' iframe').css({
 			width: j(o.id + ' .content').width(),
 			height: j(o.id + ' .content').height()
 		});
-			/*
+			
 		j(o.id + ' .nice').niceScroll({ 
 			cursorborder: 'none', 
 			touchbehavior: 1

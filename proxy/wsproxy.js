@@ -1,14 +1,16 @@
 /*  
  	Lightweight Websocket <-> Telnet Proxy
+ 	v1.3 - 2/27/2014
  	
- 	Author: plamzi - bedlam@eyecandid.com 
+ 	Author: plamzi - plamzi@gmail.com 
  	MIT license
  	
  	Requires https://github.com/Worlize/WebSocket-Node
  	In your project root: npm install websocket
  	
  	Supports client setting any host and port prior to connect.
- 	Example:
+ 	
+ 	Example (client-side JS):
  	
  		if (WebSocket) {
 			var ws = new WebSocket('ws://mywsproxyserver:6200/');
@@ -17,10 +19,14 @@
 			};
 		}
 	
-	Note:
+	Usage Notes:
 		
-		The server waits to receive { connect: 1 } so you have to send it
+		The server waits to receive { "connect": 1 } to begin connecting to
+		a telnet client on behalf of the user, so you have to send it
 		even if you are not passing it host and port from the client.
+		
+		JSON requests with { "chat": 1 } will be intercepted and handled
+		by the basic in-proxy chat system.
 	
 */
 
@@ -31,12 +37,30 @@ var zlib = require('zlib');
 var ug = require("uglify-js");
 var ws = require('websocket').server;
 var fs = require('fs');
-
 var first = (typeof srv == 'undefined');
+
+process.chdir(__dirname);
+
+stringify = function(A) {
+	var cache = [];
+	var val = JSON.stringify(A, function(k, v) {
+	    if (typeof v === 'object' && v !== null) {
+	        if (cache.indexOf(v) !== -1)
+	            return;
+	        cache.push(v);
+	    }
+	    return v;
+    });
+    return val;
+}
+
+dump = function(o) {
+	console.log(stringify(o));
+}
 
 srv = {
 
-	path: '/home/plamen/BEDLAM_CODER/src/',
+	path: __dirname,
 	
 	ws_port: 6200, /* this websocket proxy port */
 	
@@ -46,25 +70,24 @@ srv = {
 	
 	debug: false, /* enable additional debugging */
 	
-	compress: true, /* use node zlib (different from mccp) - you want this turned off unless your client can inflate data */
+	compress: true, /* use node zlib (different from mccp) - you want this turned off unless your server can't do MCCP and your client can inflate data */
 	
 	open: true, /* set to false while server is shutting down */
 	
 	ttype: {
 		enabled: 1,		
-		portal:	["mudportal.com", "XTERM-256color", "MTTS 141"],
-		bedlam: ["WEB 2.0"]
+		portal:	["mudportal.com", "XTERM-256color", "MTTS 141"]
 	},
 	
 	gmcp: {
 		enabled: 1,
-		portal: ['client mudportal.com', 'client_version 1.0'],
-		bedlam: ['client Web', 'client_version 2.0']
+		portal: ['client mudportal.com', 'client_version 1.0']
 	},
 	
 	prt: {
 		WILL_ATCP: 		new Buffer([ 255, 251, 200 ]),
 		WILL_GMCP: 		new Buffer([ 255, 251, 201 ]),
+		DO_GMCP: 		new Buffer([ 255, 253, 201 ]),
 		DO_MCCP: 		new Buffer([ 255, 253, 86 ]),
 		DO_MSDP: 		new Buffer([ 255, 253, 69 ]),
 		DO_MXP: 		new Buffer([ 255, 253, 91 ]),
@@ -101,7 +124,9 @@ srv = {
 		ESC:	33,
 		NAWS: 	31,
 		WILL_CHARSET:	new Buffer([ 255, 251, 42 ]),
-		WILL_UTF8:		new Buffer([ 255, 250, 42, 2, "UTF-8", 255, 240 ])
+		WILL_UTF8:		new Buffer([ 255, 250, 42, 2, 85, 84, 70, 45, 56, 255, 240 ]),
+		ACCEPT_UTF8:	new Buffer([ 255, 250, 2, 34, 85, 84, 70, 45, 56, 34, 255, 240 ]),
+		//WILL_UTF8:		new Buffer([ 255, 250, 42, 2, "UTF-8", 255, 240 ])
 	},
 	
 	newSocket: function (s) {
@@ -129,30 +154,13 @@ srv = {
 		}
 	},
 
-	closeSocket: function(s) {
-		
-		if (s.ts) 
-			s.ts.destroy();
-		
-		var i = server.sockets.indexOf(s);
-		if (i != -1) 
-			server.sockets.splice(i, 1);
-		
-		srv.log('killing socket: ' + s.remoteAddress);
-		
-		if (s.destroy) 
-			s.destroy();
-		else 
-			s.socket.destroy();
-		
-		srv.log('active sockets: ' + server.sockets.length);
-	},
-
 	init: function() {
 		
 		server = {
 			sockets: []
 		};
+		
+		chatlog = require(__dirname + '/chat.json');
 		
 		var webserver = http.createServer(function(request, response) {
 			response.writeHead(404);
@@ -178,7 +186,8 @@ srv = {
 			}
 
 			var s = request.accept(null, request.origin);
-
+			s.ttype = [];
+			
 			srv.log('(ws) new connection');
 			server.sockets.push(s);
 			
@@ -208,7 +217,7 @@ srv = {
 			srv.log(err);
 		});
 
-		fs.watch(srv.path+'wsproxy.js', function (e, f) {
+		fs.watch(srv.path+'/wsproxy.js', function (e, f) {
 			if (srv['update-'+f]) 
 				clearTimeout(srv['update-'+f]);
 			srv['update-'+f] = setTimeout(function() { srv.loadF(f) }, 1000);
@@ -222,7 +231,7 @@ srv = {
 			return 0;
 		
 		try { var req = eval('('+d+')') }
-		catch(err) { srv.log(err) };
+		catch(err) { srv.log('parse: '+err); return 0; };
 
 		if (req.host) {
 			s.host = req.host;
@@ -235,9 +244,15 @@ srv = {
 		}
 		
 		if (req.ttype) {
-			s.ttype = req.ttype;
+			s.ttype = [req.ttype];
 			srv.log('Client ttype set to ' + s.ttype, s);
 		}
+		
+		if (req.name)
+			s.name = req.name;
+		
+		if (req.client)
+			s.client = req.client;
 		
 		if (req.mccp)
 			s.mccp = req.mccp;
@@ -248,15 +263,11 @@ srv = {
 		if (req.debug)
 			s.debug = req.debug;
 
-		
 		if (req.chat)
 			srv.chat(s, req);
 		
-		if (req.connect) {
-			if (req.bedlam)
-				s.bedlam = 1;
+		if (req.connect) 
 			srv.initT(s);
-		}
 		
 		if (req.bin && s.ts) {
 			try {
@@ -312,11 +323,10 @@ srv = {
 		var host = s.host||srv.tn_host;
 		var port = s.port||srv.tn_port;
 		
-		if (s.bedlam)
-			s.ttype = srv.ttype.bedlam.slice(0);
-		else
-			s.ttype = srv.ttype.portal.slice(0);
+		if (!s.ttype)
+			s.ttype = [];
 		
+		s.ttype = s.ttype.concat(srv.ttype.portal.slice(0));
 		s.ttype.push(s.remoteAddress);
 		s.ttype.push(s.remoteAddress);
 			
@@ -347,32 +357,55 @@ srv = {
 				s.utf8_negotiated = s.mccp_negotiated = s.mxp_negotiated = s.gmcp_negotiated = 1;
 				s.new_negotiated = s.new_handshake = s.sga_negotiated = s.echo_negotiated = s.naws_negotiated = 1;
 			}, 12000);
-		
+			
+			srv.chatUpdate();
 		})
 		.on("data", function (data) {
 			srv.sendClient(s, data);
 		})
 		.on("timeout", function () { 
 			srv.log('telnet socket timeout: '+s);
-			s.write(new Buffer("Timeout: server port is down.\r\n").toString('base64'));
+			s.sendUTF(new Buffer("Timeout: server port is down.\r\n").toString('base64'));
 			srv.closeSocket(s);
 		})
 		.on("close", function () { 
 			srv.log('telnet socket closed: '+s.remoteAddress);
 			srv.closeSocket(s);
+			srv.chatUpdate();
 			//srv.initT(s);
 		})
 		.on("error", function (err) { 
-			s.write(new Buffer(err).toString('base64'));
+			s.sendUTF(new Buffer(err).toString('base64'));
 			srv.closeSocket(s);
 		});
+	},
+	
+	closeSocket: function(s) {
+		
+		if (s.ts) {
+			srv.log('closing telnet socket: ' + s.host||srv.tn_host + ':' + s.port||srv.tn_port);
+			s.ts.destroy();
+		}
+		
+		var i = server.sockets.indexOf(s);
+		if (i != -1) 
+			server.sockets.splice(i, 1);
+		
+		srv.log('closing socket: ' + s.remoteAddress);
+		
+		if (s.destroy) 
+			s.destroy();
+		else 
+			s.socket.destroy();
+		
+		srv.log('active sockets: ' + server.sockets.length);
 	},
 	
 	sendClient: function(s, data) {
 		
 		var p = srv.prt;
 		
-		if (!s.mccp_negotiated && !s.compressed) {
+		if (s.mccp && !s.mccp_negotiated && !s.compressed) {
 			for (i = 0; i < data.length; i++) {
 				
 				if (data[i] == p.IAC && data[i+1] == p.WILL && data[i+2] == p.MCCP2) {
@@ -418,32 +451,30 @@ srv = {
 		
 		if (!s.gmcp_negotiated) {
 			for (i = 0; i < data.length; i++)	{
-				if (data[i] == p.IAC && data[i+1] == p.DO && data[i+2] == p.GMCP) {
+				if (data[i] == p.IAC && ( data[i+1] == p.DO || data[i+1] == p.WILL ) && data[i+2] == p.GMCP) {
 					
 					srv.log('IAC DO GMCP', s);
 					
-					s.ts.send(p.WILL_GMCP);
+					if (data[i+1] == p.DO)
+						s.ts.send(p.WILL_GMCP);
+					else
+						s.ts.send(p.DO_GMCP);
+					
 					srv.log('IAC DO GMCP <- IAC WILL GMCP', s);
 					
-					if (s.bedlam) 
-						for (var t = 0; t < srv.gmcp.bedlam.length; t++)
-							srv.sendGMCP(s, srv.gmcp.bedlam[t]);
-					else
-						for (var t = 0; t < srv.gmcp.portal.length; t++)
-							srv.sendGMCP(s, srv.gmcp.portal[t]);
-					
-					srv.sendGMCP(s, 'client_ip ' + s.remoteAddress);
 					s.gmcp_negotiated = 1;
 					
-					if (s.host == 'mud.playbedlam.com') {
-						if (s.bedlam) 
-							for (var t = 0; t < srv.gmcp.bedlam.length; t++)
-								srv.sendGMCP(s, srv.gmcp.bedlam[t]);
-						else
-							for (var t = 0; t < srv.gmcp.portal.length; t++)
-								srv.sendGMCP(s, srv.gmcp.portal[t]);
-						srv.sendGMCP(s, 'client_ip ' + s.remoteAddress);
+					for (var t = 0; t < srv.gmcp.portal.length; t++) {
+						
+						if (t == 0 && s.client) {
+							srv.sendGMCP(s, 'client ' + s.client);
+							continue;
+						}
+						
+						srv.sendGMCP(s, srv.gmcp.portal[t]);
 					}
+
+					srv.sendGMCP(s, 'client_ip ' + s.remoteAddress);
 				}
 			}	
 		}
@@ -453,7 +484,7 @@ srv = {
 				if (data[i] == p.IAC && data[i+1] == p.WILL && data[i+2] == p.MSDP) {
 					s.ts.send(p.DO_MSDP);
 					srv.log("IAC WILL MSDP <- IAC DO MSDP", s);
-					srv.sendMSDPPair(s, "CLIENT_ID", "mudportal.com");
+					srv.sendMSDPPair(s, "CLIENT_ID", s.client||"mudportal.com");
 					srv.sendMSDPPair(s, "CLIENT_VERSION", "1.0");
 					srv.sendMSDPPair(s, "CLIENT_IP", s.remoteAddress);
 					srv.sendMSDPPair(s, "XTERM_256_COLORS", "1");
@@ -469,6 +500,12 @@ srv = {
 				if (data[i] == p.IAC && data[i+1] == p.DO && data[i+2] == p.MXP) {
 					s.ts.send(new Buffer([p.IAC, p.WILL, p.MXP]));
 					srv.log("IAC DO MXP <- IAC WILL MXP", s);
+					s.mxp_negotiated = 1;
+				}
+				else
+				if (data[i] == p.IAC && data[i+1] == p.WILL && data[i+2] == p.MXP) {
+					s.ts.send(new Buffer([p.IAC, p.DO, p.MXP]));
+					srv.log("IAC WILL MXP <- IAC DO MXP", s);
 					s.mxp_negotiated = 1;
 				}
 			}
@@ -501,7 +538,7 @@ srv = {
 		if (!s.echo_negotiated) {
 			for (i = 0; i < data.length; i++)	{
 				if (data[i] == p.IAC && data[i+1] == p.WILL && data[i+2] == p.ECHO) {
-					s.ts.send(new Buffer([p.IAC, p.WILL, p.ECHO]));
+					//s.ts.send(new Buffer([p.IAC, p.WILL, p.ECHO]));
 					srv.log("IAC WILL ECHO <- IAC WONT ECHO");
 					s.echo_negotiated = 1;
 				}
@@ -530,11 +567,16 @@ srv = {
 		
 		if (!s.utf8_negotiated) {
 			for (i = 0; i < data.length; i++) {
+				
 				if (data[i] == p.IAC && data[i+1] == p.DO && data[i+2] == p.CHARSET) {
 					s.ts.send(p.WILL_CHARSET);
-					s.ts.send(p.WILL_UTF8);
+					srv.log("IAC DO CHARSET <- IAC WILL CHARSET", s);
+				}
+				
+				if (data[i] == p.IAC && data[i+1] == p.SB && data[i+2] == p.CHARSET) {
+					s.ts.send(p.ACCEPT_UTF8);
+					srv.log("UTF-8 negotiated", s);
 					s.utf8_negotiated = 1;
-					srv.log("IAC DO CHARSET <- IAC WILL CHARSET (UTF-8)", s);
 				}
 			}
 		}
@@ -548,23 +590,23 @@ srv = {
 		}
 		
 		if (!srv.compress || (s.mccp && s.compressed)) {
-			s.write(data.toString('base64'));
+			s.sendUTF(data.toString('base64'));
 			return;
 		}
-			
+		
 		/* Client<->Proxy only Compression */
 		zlib.deflateRaw(data, function(err, buffer) {
-			if (!err) {
-				s.write(buffer.toString('base64'));
-			}
+			if (!err) 
+				s.sendUTF(buffer.toString('base64'));
 			else 
 				srv.log('zlib error: ' + err);
-		});	
+		});
+			
 	},
 	
 	loadF: function(f) {
 		try {
-			var fl = ug.minify(srv.path + f).code;
+			var fl = ug.minify(srv.path + '/' + f).code;
 			eval(fl + '');
 			srv.log('dyn.reload: ' + f); 
 		} 
@@ -577,44 +619,54 @@ srv = {
 	
 	chat: function(s, req) {
 		
-		if (!req.name) {
+		srv.log("chat: "+stringify(req), s);
+		s.chat = 1;
+		
+		var ss = server.sockets;
+		
+		if (!chatlog)
+			chatlog = [];
+		
+		if (req.channel && req.channel == 'op') {
+
+			//chatlog = chatlog.filter(function(l) { return (l[1].channel == 'status')?0:1 });
+			var temp = chatlog.concat(), users = [];
+
+			for (var i = 0; i < ss.length; i++)
+				if (ss[i].ts)
+					users.push('<span style="color: #01c8d4">' + (ss[i].name||'Guest') + '</span>@'+ss[i].host);
+					
+			temp.push([new Date(), { channel: 'status', name: 'App users:', msg: users.join(', ')}]);
+			
+			s.sendUTF("portal.chatlog " + stringify(temp));
+			//fs.writeFileSync("./chat.json", stringify(chatlog));
 			return;
 		}
 		
-		if (req.quit) {
-		  var ss = server.sockets;
-			for (var i = 0; i < ss.length; i++) {
-				srv.sendClient(ss[i], srv.prt.START);
-					srv.sendClient(ss[i], JSON.stringify({ sitechat: 1, msg: req.name+' has quit chat.' }));
-				srv.sendClient(ss[i], srv.prt.STOP);
-			}
-		  	s.chat = 0;
-			return;
-		}
+		delete req.chat;
+		chatlog.push([new Date(), req]);
 		
-		if (!s.chat) {
-		  var ss = server.sockets;
-			for (var i = 0; i < ss.length; i++) {
-				srv.sendClient(ss[i], srv.prt.START, JSON.stringify({ sitechat: 1, msg: req.name+' has joined chat.' }), srv.prt.STOP);
-			}
-		  s.chat = 1;
-		}
+		for (var i = 0; i < ss.length; i++)
+			if (ss[i].chat)
+				ss[i].sendUTF("portal.chat " + stringify(req));
 		
-		if (req.text && req.name) {
-		  var ss = server.sockets;
-			for (var i = 0; i < ss.length; i++) {
-				srv.sendClient(ss[i], srv.prt.START, JSON.stringify(req), srv.prt.STOP);
-			}
-		}
+		var res = fs.writeFileSync("./chat.json", stringify(chatlog));
+	},
+	
+	chatUpdate: function() {
+		var ss = server.sockets;
+		for (var i = 0; i < ss.length; i++)
+			if (ss[i].chat)
+				srv.chat(ss[i], { channel: 'op' });
 	},
 	
 	originAllowed: function(o) {
 		return 1;
-	},
+	}, 
 
 	log: function(msg, s) {
-		if (!s) 
-			s = { remoteAddress: 'server' };
+		if (!s)
+			s = { remoteAddress: '[]' };
 		console.log(u.format((new Date()) + ' %s: %s', s.remoteAddress, msg));
 	},
 	
@@ -625,13 +677,14 @@ srv = {
 				ss[i].write('Proxy server is going down...'); /* inform clients so they can hop to another instance faster */
 				setTimeout(srv.closeSocket, 10, ss[i]);
 			}
-		//db.end();
 		setTimeout(process.exit, 3000, core?3:0); /* send SIGQUIT if core dump */
 	}
 }
 
 if (first) {
 
+	chatlog = [];
+	
 	process.stdin.resume();
 
 	process

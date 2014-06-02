@@ -1,8 +1,10 @@
-var LoginPrompt = function(opt) {
+var LoginPrompt = function(o) {
 	
-	var o = opt, user, pass, line;
+	var user, line, pastuser = 0;
 	var id = o.id = o.id||'#login-prompt';
-	var pass;
+	var pass = param('kongregate_game_auth_token')||null;
+	var shown = 0;
+	//var pass = null;
 	
 	try {
 	    o.show = new RegExp(o.show);
@@ -16,27 +18,28 @@ var LoginPrompt = function(opt) {
 	
 	var listen = function(d) {
 		
-		if ((line = d.match(o.show)) && !j('#modal').length)
-			show(line[0]);
-		
-		if (!j('#modal').length)
-		    return d;
-		
+		if ((line = d.match(o.show))) {
+			if (param('kongregate_user_id'))
+				Config.socket.write(param('kongregate_user_id'));
+			else
+				show(line[0]);
+		}
+		else
 		if ((line = d.match(o.error))) {
 			j(id + ' .error').html(line[0]).show();
 			return '';
 		}
 		else
 		if (pass && (line = d.match(o.password))) {
+			pastuser = 1;
 			Config.socket.write(pass);
 			return '';
 		}
 		else
-		if (d.match(o.dismiss)) {
-			j('#modal').modal('hide');
-			setTimeout(function() {
-		    	j('#scroll-view').click();
-			}, 1000);
+		if (d.match(o.dismiss) && shown) {
+			j('.modal').modal('hide');
+			setTimeout(function() { j('#scroll-view .send').focus() }, 500);
+			shown = 0;
 		}
 		
 		return d;
@@ -44,8 +47,8 @@ var LoginPrompt = function(opt) {
 	
 	var go = function() { 
 
-        log('Login.go');
-
+        log('LoginPrompt.go');
+        
 		if (!j(id + ' .user').val()) {
 			j(id + ' .error').html('You need to enter a '+o.placeholder+'.').show();
 			return;
@@ -59,17 +62,23 @@ var LoginPrompt = function(opt) {
         j(id+' .error').hide();
 		
 		pass = j(id+' .pass').val();
-		Config.socket.write(j(id+' .user').val());
+		
+		if (pastuser)
+			Config.socket.write(pass);
+		else
+			Config.socket.write(j(id+' .user').val());
 	};
 	
 	var show = function(t) {
 		
+		shown = 1;
+		
 		o.text = '\
-		<div id="'+o.id.split('#')[1]+'">\
+		<div id="'+id.split('#')[1]+'" class="login-prompt">\
 			<div class="error alert" style="display:none"></div>\
 			<div style="width: 100%">\
 			<div class="left" style="margin: 0px; opacity: 0.6; padding: 0px 40px 0px 0px">\
-			<img style="width: 90px;" src="/bedlam/app/images/login.png"></div>\
+			<img style="width: 90px;" src="/app/images/login.png"></div>\
 			<div class="left" style="width: 200px">\
 			<input class="user right" type="text" tabindex="1" size=18 placeholder="'+(o.placeholder||'')+'">\
 			<br><br>\
@@ -82,12 +91,20 @@ var LoginPrompt = function(opt) {
 		o.closeable = 0;
 		
 		o.buttons = [{
-		    text: 'Login',
+		    text: '<i class="icon-signin"></i> Login',
 		    keep: 1,
 		    click: go
 		}];
 		
-		o.css = {
+		if (window.user.guest && !param('kong'))
+			o.buttons.push({
+                text: '<i class="icon-sun"></i> Portal Sign-In',
+    		    click: function() {
+    		    	window.open('/component/comprofiler/login', '_self');
+    		    }
+    		});
+		
+		o.css = o.css||{
 		    width: 400
 		};
 		
@@ -112,7 +129,7 @@ var LoginPrompt = function(opt) {
 		
 		setTimeout(function() {
 	    	j(id+' .user').focus();
-		}, 3000);
+		}, 1000);
 	}
 
 	log('LoginPrompt.init');

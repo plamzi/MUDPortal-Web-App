@@ -10,23 +10,22 @@
 var ChatterBox = function(o) {
 			
 	var self = this;
-
-	o.css.height = o.css.height||360;
-	o.css.width = o.css.width||360;
+	
+	var resize = function() {
+		j('.chat-tab').css({
+			width: j(o.id).width() - 10,
+			height: j(o.id).height() - 50,
+		})
+	}
 	
 	/* Create a window that doesn't fade when other windows are selected (nofade) */
 	var win = new Window({
 		id: o.id,
 		title: o.title,
 		'class': 'nofade ui-group',
-		css: o.css,
+		css: o.css||null,
 		handle: '.chat-tabs',
-		onResize: function() {
-			j('.chat-tab').css({
-				width: j(o.id).width() - 10,
-				height: j(o.id).height() - 50,
-			})
-		}
+		onResize: resize
 	});
 	
 	/* Using Twitter Bootstrap markup makes our tabs a breeze to create */
@@ -35,6 +34,12 @@ var ChatterBox = function(o) {
 		<div class="tab-content"></div>\
 	');
 	
+	j('#chat-window .content').css('background-color', 'transparent');
+	j('#chat-window .tab-content').css({ 
+		'background-color': 'black',
+		height: '100%'
+	});
+	
 	var tab = function(t) {
 		
 		var i = o.tabs.length;
@@ -42,8 +47,11 @@ var ChatterBox = function(o) {
 
 		var html = '<li><a class="kbutton '+t.name+'" data-toggle="tab" href="#chat-tab-'+i+'">'+t.name+'</a></li>';
 		
-		if (!t.after)
+		if (!t.after && !t.before)
 			j(o.id + ' .chat-tabs').append(html);
+		else
+		if (t.before)
+			j(html).insertBefore(j(o.id + ' .chat-tabs .'+t.before).parent());
 		else
 			j(html).insertAfter(j(o.id + ' .chat-tabs .'+t.after).parent());
 		
@@ -53,10 +61,7 @@ var ChatterBox = function(o) {
 			width: j(o.id).width() - 10,
 			height: j(o.id).height() - 50,
 		})
-		.niceScroll({ 
-			cursorborder: 'none', 
-			touchbehavior: 1
-		});
+		.niceScroll({ cursorborder: 'none', cursorwidth: '8px' });
 		
 		return o.id + ' #chat-tab-' + i;
 	}
@@ -65,7 +70,7 @@ var ChatterBox = function(o) {
 	for (var i = 0; i < o.tabs.length; i++) {
 		
 		if (!o.tabs[i].target) {
-			j(o.id + ' .chat-tabs').append('<li'+(i==0?' class="active"':'')+'><a class="kbutton" data-toggle="tab" href="#chat-tab-'+i+'">'+o.tabs[i].name+'</a></li>');
+			j(o.id + ' .chat-tabs').append('<li'+(i==0?' class="active"':'')+'><a class="kbutton '+o.tabs[i].name+'" data-toggle="tab" href="#chat-tab-'+i+'">'+o.tabs[i].name+'</a></li>');
 			j(o.id + ' .tab-content').append('<div id="chat-tab-'+i+'" class="chat-tab tab-pane nice'+(i==0?' active':'')+'"></div>');
 	
 			j('#chat-tab-'+i).css({
@@ -150,13 +155,14 @@ var ChatterBox = function(o) {
    	Event.listen('before_display', process); 
    
     /* Expose public methods */
-   	var exp = {
+   	var self = {
 		process: process,
-		tab: tab
+		tab: tab,
+		resize: resize
 	}
    	
-   	Config.ChatterBox = exp;
+   	Config.ChatterBox = self;
    	Event.fire('chatterbox_ready');
    	
-   	return exp;
+   	return self;
 }

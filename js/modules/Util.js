@@ -2,6 +2,8 @@ String.prototype.has = function(A) { if (!A.length) return false; return (this.i
 
 String.prototype.start = function(A) { return (this.indexOf(A) == 0) }
 
+String.prototype.cap = function() {  return this.charAt(0).toUpperCase() + this.slice(1) }
+
 stringify = function(A) {
 	var cache = [];
 	var val = JSON.stringify(A, function(k, v) {
@@ -23,6 +25,54 @@ function html_decode(str) {
     return str.replace(/&amp\;/g,'&').replace(/&lt\;/g,'<').replace(/&gt\;/g,'>') ;
 }
 
+function getSelText() {
+	
+	if (window.getSelection)
+	    return window.getSelection().toString();
+	else if (document.getSelection)
+		return document.getSelection().toString();
+	else if (document.selection)
+	     return document.selection.createRange().text;
+	
+	return null;
+}
+
+function getCaretPosition (ctrl) {
+	var CaretPos = 0;	// IE Support
+	if (document.selection) {
+	ctrl.focus ();
+		var Sel = document.selection.createRange ();
+		Sel.moveStart ('character', -ctrl.value.length);
+		CaretPos = Sel.text.length;
+	}
+	// Firefox support
+	else if (ctrl.selectionStart || ctrl.selectionStart == '0')
+		CaretPos = ctrl.selectionStart;
+	return (CaretPos);
+}
+
+function setCaretPosition(ctrl, pos){
+	if(ctrl.setSelectionRange)
+	{
+		ctrl.focus();
+		ctrl.setSelectionRange(pos,pos);
+	}
+	else if (ctrl.createTextRange) {
+		var range = ctrl.createTextRange();
+		range.collapse(true);
+		range.moveEnd('character', pos);
+		range.moveStart('character', pos);
+		range.select();
+	}
+}
+
+Date.prototype.ymd = function() {
+   var yyyy = this.getFullYear().toString();
+   var mm = (this.getMonth()+1).toString();
+   var dd  = this.getDate().toString();
+   return yyyy + '-' + (mm[1]?mm:"0"+mm[0]) + '-' + (dd[1]?dd:"0"+dd[0]);
+};
+	  
 Array.prototype.remove = function() {
 	var what, a = arguments, L = a.length, ax;
 	while (L && this.length) {
@@ -128,6 +178,23 @@ String.prototype.param = function(A) {
 		else return decodeURIComponent(results[1]);
 }
 
+if (!Object.prototype.extend)
+	Object.defineProperty(Object.prototype, "extend", {
+		enumerable: false,
+		value: function() {
+			var dest = this;
+			for (var i = 0; i < arguments.length; i++) {
+				var from = arguments[i], 
+					props = Object.getOwnPropertyNames(from);
+					props.forEach(function(name) {
+						var d = Object.getOwnPropertyDescriptor(from, name);
+						Object.defineProperty(dest, name, d);
+					});
+			}
+			return this;
+		}
+	});
+
 var param = function(A) {
 	A = A.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
 	var regex = new RegExp("[\\?&]"+A+"=([^&#]*)");
@@ -139,6 +206,10 @@ var param = function(A) {
 var log = function(A) {
 	if (Config.debug)
 		console.log(A)
+}
+
+var dump = function(A) {
+	console.log(stringify(A))
 }
 
 function exists(A) { return (( typeof A != 'undefined' )?A:null) };

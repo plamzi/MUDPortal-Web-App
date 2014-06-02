@@ -1,6 +1,10 @@
 var Event = {
 	
 	q: {
+		'socket_open': [],
+		'socket_before_close': [],
+		'socket_close': [],
+		'socket_data': [],		
 		'before_process': [],
 		'after_protocols': [],
 		'before_html': [],
@@ -13,7 +17,7 @@ var Event = {
 		'chatterbox_ready': [],
 		'msdp': [],
 		'gmcp': [],
-		'atcp': []
+		'atcp': [],
 	},
 	
 	fire: function(event, data, caller) {
@@ -21,6 +25,9 @@ var Event = {
 			log('Event.js: No such event to fire: ' + event);
 			return 0;
 		}
+		//else
+			//log('Event.fire: '+event);
+			
 		for (var i = 0; i < this.q[event].length; i++)
 			data = this.q[event][i](data, caller);
 		return data;

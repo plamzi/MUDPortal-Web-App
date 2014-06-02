@@ -24,11 +24,15 @@ var Config = {
 	
 	dev: window.location.search.has('dev')||0,
 	
+	separator: param('separator')||';',
+	
 	view: param('host') + ':' + param('port') + ':' + window.screen.width + 'x' + window.screen.height,
 	
-	Device: {
-		touch: ('ontouchstart' in window || navigator.msMaxTouchPoints),
-		lowres: (j(window).width() <= 640),
+	device: {
+		touch: 'ontouchstart' in window,
+		lowres: (j(window).width() <= 640 || j(window).height() <= 640),
+		mobile: (j(window).width() <= 640 || j(window).height() <= 640),
+		tablet: ('ontouchstart' in window && j(window).width() > 640),
 		width: j(window).width(),
 		height: j(window).height()
 	},
