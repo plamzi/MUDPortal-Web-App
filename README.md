@@ -1,7 +1,11 @@
 MUDPortal-Web-App
 =================
 
-Web UI code for the MUD client running on http://www.mudportal.com.
+Web UI code for the MUD game client running on http://www.mudportal.com/play
+
+Screenshots: 
+http://www.mudportal.com/images/Promo1.png
+http://www.mudportal.com/images/Promo2.png
 
 Features include but are not limited to:
 
@@ -22,3 +26,5 @@ Features include but are not limited to:
 * Triggers / macros / command memory (w/ typeahead)
 
 * Vector-based world mapper with flexible edit mode to allow for mapping any MUD world via exploration
+
+* 18 custom plugins found under js/modules
