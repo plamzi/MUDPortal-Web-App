@@ -1,5 +1,5 @@
 /* 
- * ChatterBox plugin - v1.0 - 09/07/2013
+ * ChatterBox plugin - v1.1 - 09/25/2014
  * Always included on the app page (this code is just for easy viewing)
  * Creates a tabbed window with configurable tabs.
  * Captures and redirects lines matching regex expressions to one or more tabs.
@@ -11,33 +11,23 @@ var ChatterBox = function(o) {
 			
 	var self = this;
 	
-	var resize = function() {
-		j('.chat-tab').css({
-			width: j(o.id).width() - 10,
-			height: j(o.id).height() - 50,
-		})
-	}
-	
+	o = o || {
+		id: '#chat-window',
+		title: 'ChatterBox',
+		width: 360,
+		height: 360,
+		top: 0,
+		right: 360,
+		tabs: []
+	};
+
 	/* Create a window that doesn't fade when other windows are selected (nofade) */
 	var win = new Window({
 		id: o.id,
 		title: o.title,
-		'class': 'nofade ui-group',
-		css: o.css||null,
-		handle: '.chat-tabs',
-		onResize: resize
-	});
-	
-	/* Using Twitter Bootstrap markup makes our tabs a breeze to create */
-	j('#chat-window .content').prepend('\
-		<ul class="chat-tabs nav nav-tabs"></ul>\
-		<div class="tab-content"></div>\
-	');
-	
-	j('#chat-window .content').css('background-color', 'transparent');
-	j('#chat-window .tab-content').css({ 
-		'background-color': 'black',
-		height: '100%'
+		'class': 'nofade ui-group ChatterBox',
+		css: o.css || null,
+		handle: '.nav-tabs'
 	});
 	
 	var tab = function(t) {
@@ -45,50 +35,21 @@ var ChatterBox = function(o) {
 		var i = o.tabs.length;
 		o.tabs.push(t);
 
-		var html = '<li><a class="kbutton '+t.name+'" data-toggle="tab" href="#chat-tab-'+i+'">'+t.name+'</a></li>';
-		
-		if (!t.after && !t.before)
-			j(o.id + ' .chat-tabs').append(html);
-		else
-		if (t.before)
-			j(html).insertBefore(j(o.id + ' .chat-tabs .'+t.before).parent());
-		else
-			j(html).insertAfter(j(o.id + ' .chat-tabs .'+t.after).parent());
-		
-		j(o.id + ' .tab-content').append('<div id="chat-tab-'+i+'" class="chat-tab tab-pane nice'+(i==0?' active':'')+'">'+(t.html||'')+'</div>');
-		
-		j('#chat-tab-'+i).css({
-			width: j(o.id).width() - 10,
-			height: j(o.id).height() - 50,
-		})
-		.niceScroll({ cursorborder: 'none', cursorwidth: '8px' });
-		
-		return o.id + ' #chat-tab-' + i;
-	}
+		return win.tab(t);
+	};
 	
 	/* Build the tabs from the options. See Bedlam-ChatterBox.js */
 	for (var i = 0; i < o.tabs.length; i++) {
 		
-		if (!o.tabs[i].target) {
-			j(o.id + ' .chat-tabs').append('<li'+(i==0?' class="active"':'')+'><a class="kbutton '+o.tabs[i].name+'" data-toggle="tab" href="#chat-tab-'+i+'">'+o.tabs[i].name+'</a></li>');
-			j(o.id + ' .tab-content').append('<div id="chat-tab-'+i+'" class="chat-tab tab-pane nice'+(i==0?' active':'')+'"></div>');
-	
-			j('#chat-tab-'+i).css({
-				width: j(o.id).width() - 10,
-				height: j(o.id).height() - 80,
-			})
-			.niceScroll({ 
-				cursorborder: 'none',
-				touchbehavior: 1
-			});
-		}
+		if (!o.tabs[i].target)
+			win.tab(o.tabs[i]);
 		
 		if (o.tabs[i].match)
 			try {
 				o.tabs[i].re = new RegExp(o.tabs[i].match, 'gi');
 				//log(o.tabs[i].re);
 			}
-			catch(ex) { log(ex) }
+			catch(ex) { log(ex); }
 				
 	}
 
@@ -99,13 +60,11 @@ var ChatterBox = function(o) {
 		var src = msg;
 		//src = src.replace(/([\r\n]|<br>)/g,'');
 		
-		log('ChatterBox process: '+src);
-		
 		for (var i = 0; i < o.tabs.length; i++) {
 			
 			if (!o.tabs[i].re)
 				continue;
-			
+		
 			var match = src.match(o.tabs[i].re);
 			
 			if (match && match.length) {
@@ -125,13 +84,13 @@ var ChatterBox = function(o) {
 				if (o.tabs[i].target) {
 					var t;
 					if ((t = o.tabs.index('name', o.tabs[i].target)) > -1) {
-						j('#chat-tab-'+t).append(text);
-						j('#chat-tab-'+t).scrollTop(j('#chat-tab-'+t)[0].scrollHeight);
+						j(o.id + ' #tab-'+t).append(text);
+						j(o.id + ' #tab-'+t).scrollTop(j(o.id + ' #tab-'+t)[0].scrollHeight);
 					}
 				}
 				else {
-					j('#chat-tab-'+i).append(text);
-					j('#chat-tab-'+i).scrollTop(j('#chat-tab-'+i)[0].scrollHeight);
+					j(o.id + ' #tab-'+i).append(text);
+					j(o.id + ' #tab-'+i).scrollTop(j(o.id + ' #tab-'+i)[0].scrollHeight);
 				}
 				
 				if (o.tabs[i].gag)/* we're hiding the output so triggers can still work */ 
@@ -139,7 +98,7 @@ var ChatterBox = function(o) {
 			}
 		}
 		return msg;
-	}
+	};
 	
 	/* Add an icon to the ScrollView window to hide/show the chat box 
     if (Config.ScrollView)
@@ -158,11 +117,13 @@ var ChatterBox = function(o) {
    	var self = {
 		process: process,
 		tab: tab,
-		resize: resize
-	}
+		win: win
+	};
    	
    	Config.ChatterBox = self;
-   	Event.fire('chatterbox_ready');
-   	
+	setTimeout(function() {
+		Event.fire('chatterbox_ready', self);
+   	}, 500);
+	
    	return self;
-}
+};

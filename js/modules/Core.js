@@ -19,6 +19,9 @@ if (Config.socket)
 		return "Are you sure you want to disconnect and leave this page?"
 	};
 
+if (Config.embed)
+	j('body#page').css({ background: 'transparent'});
+	
 j(document).ready(function () {
 	if (Config.clean) {
 		j('#header').remove();
@@ -30,6 +33,13 @@ j(document).ready(function () {
 			zIndex: 0
 		}).on('click', function() { j(this).css('opacity', 1) } );
 	}
+	
+	if (Config.embed) {
+		Event.listen('scrollview_ready', function() {
+			j('.ui-resizable-handle').css({ opacity: 0 });
+			j('.icon-minus').remove();
+		});
+	}
 });
 	
 if (Config.host && Config.port)
@@ -37,9 +47,6 @@ if (Config.host && Config.port)
 
 if (Config.dev)
 	j('head').append('<script type="text/javascript" src="http://www.mudportal.com/index.php?option=com_portal&task=get_dev&host='+Config.host+':'+Config.port+'"></script>');
-
-if (!Config.device.touch && user.guest)
-	j('.app').prepend('<a class="right" style="opacity:0.5;margin-right: 8px" href="/component/comprofiler/login" target="_self"><i class="icon-sun"></i> login</a>');
  
 if (Config.device.touch) {
 	document.ontouchmove = function(e) { e.preventDefault() }
@@ -50,8 +57,7 @@ if (Config.device.touch) {
 		j('head').append('<link rel="apple-touch-startup-image" sizes="640x960" href="/images/app-splash-4.png">');
 }
 
-if (!Config.nocore)
-j(document).ready(function () {
+if (!Config.nocore) {
 
 	if (!Config.nocenter)
 		Config.ControlPanel = new ControlPanel();
@@ -62,23 +68,27 @@ j(document).ready(function () {
 			css: {
 				width: Config.width,
 				height: Config.height,
-				top: 80,
-				left: 240,
+				top: Config.top,
+				left: Config.left,
 				zIndex: 103
 			},
 			scrollback: 40 * 1000
 		});
+
+		if (!Config.embed && !Config.device.mobile && !param('kong')) {
+			Config.Toolbar = new Toolbar();
+			Event.listen('window_open', Config.Toolbar.update);
+			Event.listen('window_close', Config.Toolbar.update);
+			Event.listen('window_front', Config.Toolbar.front);
+		}
 	}
-   
-	j('body').on('mouseover', '.tip', function() {
-		j(this).tooltip({ 
-		    position: { my: 'center bottom', at: 'center top' }
-		}).tooltip('open');
-	})
-	.on('mouseout', '.tip', function() {
-		try {
-			j(this).tooltip('destroy');
-		} catch(ex) {}
-	});
 	
+	if (!Config.device.touch && user.guest)
+		j('.app').prepend('<a class="right" style="opacity:0.5;margin-right: 8px" href="/component/comprofiler/login" target="_self"><i class="icon-sun"></i> login</a>');
+}
+
+j('body').tooltip({ 
+	selector: '.tip',
+	html: true,
+	position: { my: 'center bottom', at: 'center top' }
 });

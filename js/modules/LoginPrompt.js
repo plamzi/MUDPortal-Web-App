@@ -22,6 +22,9 @@ var LoginPrompt = function(o) {
 			if (param('kongregate_user_id'))
 				Config.socket.write(param('kongregate_user_id'));
 			else
+			if (param('token'))
+				Config.socket.write(param('token'));
+			else
 				show(line[0]);
 		}
 		else
@@ -38,12 +41,12 @@ var LoginPrompt = function(o) {
 		else
 		if (d.match(o.dismiss) && shown) {
 			j('.modal').modal('hide');
-			setTimeout(function() { j('#scroll-view .send').focus() }, 500);
+			setTimeout(function() { j('#scroll-view .send').focus(); }, 500);
 			shown = 0;
 		}
 		
 		return d;
-	}
+	};
 	
 	var go = function() { 
 
@@ -80,9 +83,9 @@ var LoginPrompt = function(o) {
 			<div class="left" style="margin: 0px; opacity: 0.6; padding: 0px 40px 0px 0px">\
 			<img style="width: 90px;" src="/app/images/login.png"></div>\
 			<div class="left" style="width: 200px">\
-			<input class="user right" type="text" tabindex="1" size=18 placeholder="'+(o.placeholder||'')+'">\
+			<input class="user right" type="text" tabindex="1" autocapitalize="off" autocorrect="off" size=18 placeholder="'+(o.placeholder||'')+'">\
 			<br><br>\
-			<input class="pass right" type="password" tabindex="2" size=18 placeholder="password">\
+			<input class="pass right" type="password" tabindex="2" autocapitalize="off" autocorrect="off" size=18 placeholder="password">\
 			</div></div>\
 		</div>';
 	
@@ -96,7 +99,7 @@ var LoginPrompt = function(o) {
 		    click: go
 		}];
 		
-		if (window.user.guest && !param('kong'))
+		if (window.user.guest && !Config.device.touch && !param('kong') && !param('gui'))
 			o.buttons.push({
                 text: '<i class="icon-sun"></i> Portal Sign-In',
     		    click: function() {
@@ -113,7 +116,7 @@ var LoginPrompt = function(o) {
 		j(id+' .pass').keypress(function(e) { 
 			if (e.which == 13) { 
 				e.preventDefault(); 
-				go(e) 
+				go(e); 
 			} 
 		});
 		
@@ -130,11 +133,11 @@ var LoginPrompt = function(o) {
 		setTimeout(function() {
 	    	j(id+' .user').focus();
 		}, 1000);
-	}
+	};
 
 	log('LoginPrompt.init');
 	
 	return {
 		listen: listen
-	}
-}
+	};
+};

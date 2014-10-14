@@ -193,9 +193,8 @@ var ControlPanel = function () {
 		
 		t.append('<div class="left game-blurb" style="padding: 4px 18px 0px 4px"><img class="game-thumb" src="'+thumb+'"></div><div class="left" style="padding-top: 4px">'+name+'<div style="height: 8px; clear: both"></div>'+url);
 		
-		if (mobile) {
+		if (mobile)
 			return;
-		}
 		
 		if (profile)
 			t.append('<br>\
@@ -517,10 +516,10 @@ var ControlPanel = function () {
 	
 	/* begin portal chat */
 	
-	var linkify = function(a) {
-		return a.replace(/(http.*:\/\/[^\s]+)/gi,'<a href="$1" target="_blank">$1</a>');
+	var linkify = function(t) {
+		return t.replace(/([^"'])(http.*:\/\/[^\s\x1b"']+)/g,'$1<a href="$2" target="_blank">$2</a>');
 	}
-	
+
 	var closeChat = function() {
 		j(id + ' .chat-panel').remove();
 		if (nice)
@@ -539,8 +538,8 @@ var ControlPanel = function () {
 		if (mychannel)
 			closeChat();
 
-		j(id + ' .gamepanel').html('<div class="chat-panel"><!--<div class="chat-title right" style="color:#01c8d4;opacity:0.6">'+channel.toUpperCase()+'</div>--><div class="chat-main chat-'+channel+'" style="width: 100%; height: 440px"></div>\
-			<div class="input" style="width: 95%;height: 30px;margin-right: 40px; position: absolute; bottom: 34px;"><input class="chat-send send" autocomplete="on" spellcheck="'+(Config.getSetting('spellcheck')?'true':'false')+'" title="Type a chat message in this field and press \'Enter\' to send it." placeholder="type your message..." aria-live="polite"/></div>\</div>');
+		j(id + ' .gamepanel').html('<div class="chat-panel"><!--<div class="chat-title right" style="color:#01c8d4;opacity:0.6">'+channel.toUpperCase()+'</div>--><div class="nice chat-main chat-'+channel+'" style="width: 100%; height: 440px"></div>\
+			<div class="input" style="width: 95%;height: 30px;margin-right: 40px; position: absolute; bottom: 6px;"><input class="chat-send send" autocomplete="on" autocapitalize="off" spellcheck="'+(Config.getSetting('spellcheck')?'true':'false')+'" placeholder="type your message..." aria-live="polite"/></div>\</div>');
 		
 		nice = j(id + ' .chat-'+channel).niceScroll({ 
 			cursorwidth: 7,
@@ -597,9 +596,9 @@ var ControlPanel = function () {
 		}
 	});
 	
-	Event.listen('socket_open', function(c) {
+	Event.listen('chat_open', function(c) {
 		
-		log('Event: socket_open');
+		log('Event: chat_open');
 		
 		if (c == chat) {
 			
@@ -621,13 +620,10 @@ var ControlPanel = function () {
 			dump(chat);
 		}
 	});
-	
-	Event.listen('socket_data', function(d, c) {
 
-		if (!d.has('portal.chat'))
-			return d;
-		
-		dump(c);
+	Event.listen('chat_data', function(d, c) {
+
+		//dump(c);
 		dump(d);
 		
 		var key = d.match(/([^ ]+?) /)[1];
@@ -647,7 +643,7 @@ var ControlPanel = function () {
 		return null;
 	});
 	
-	Event.listen('socket_before_close', function(c) {
+	Event.listen('chat_before_close', function(c) {
 		if (c == chat) {
 			chat.send(stringify({
 				chat: 1,
@@ -658,14 +654,12 @@ var ControlPanel = function () {
 		}
 	});
 	
-	Event.listen('socket_close', function(c) {
+	Event.listen('chat_close', function(c) {
 		if (c == chat) {
 			j(id + ' .chatlist').remove();
 			closeChat();
 		}
 	});
 	
-	var chat = new Socket({
-		type: 'chat'
-	});
+	var chat = new Socket({ type: 'chat' });
 }

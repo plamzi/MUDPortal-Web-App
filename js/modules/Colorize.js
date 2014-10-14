@@ -151,7 +151,7 @@ var Colorize = function (o) {
 			if (color || bgcolor || bold || italic)
 				v += '<span style="'+color+bgcolor+italic+'">';
 			
-			log(v);
+			//log(v);
 			
 			var re = new RegExp(m[i].replace(/\[/g, '\\['), 'g');
 			t = t.replace(re, v);

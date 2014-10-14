@@ -25,6 +25,24 @@ function html_decode(str) {
     return str.replace(/&amp\;/g,'&').replace(/&lt\;/g,'<').replace(/&gt\;/g,'>') ;
 }
 
+function addslashes(str) {
+  //  discuss at: http://phpjs.org/functions/addslashes/
+  // original by: Kevin van Zonneveld (http://kevin.vanzonneveld.net)
+  // improved by: Ates Goral (http://magnetiq.com)
+  // improved by: marrtins
+  // improved by: Nate
+  // improved by: Onno Marsman
+  // improved by: Brett Zamir (http://brett-zamir.me)
+  // improved by: Oskar Larsson Högfeldt (http://oskar-lh.name/)
+  //    input by: Denny Wardhana
+  //   example 1: addslashes("kevin's birthday");
+  //   returns 1: "kevin\\'s birthday"
+
+  return (str + '')
+    .replace(/[\\"']/g, '\\$&')
+    .replace(/\u0000/g, '\\0');
+}
+
 function getSelText() {
 	
 	if (window.getSelection)
@@ -178,6 +196,7 @@ String.prototype.param = function(A) {
 		else return decodeURIComponent(results[1]);
 }
 
+/*
 if (!Object.prototype.extend)
 	Object.defineProperty(Object.prototype, "extend", {
 		enumerable: false,
@@ -194,7 +213,7 @@ if (!Object.prototype.extend)
 			return this;
 		}
 	});
-
+*/
 var param = function(A) {
 	A = A.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
 	var regex = new RegExp("[\\?&]"+A+"=([^&#]*)");
@@ -209,7 +228,8 @@ var log = function(A) {
 }
 
 var dump = function(A) {
-	console.log(stringify(A))
+	if (Config.debug)
+		console.log(stringify(A))
 }
 
 function exists(A) { return (( typeof A != 'undefined' )?A:null) };

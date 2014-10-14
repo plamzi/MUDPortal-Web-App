@@ -1,17 +1,17 @@
 var MistyBars = function(o) {
     
-    var cv, cs, cm, win, id = "#bar-window", o = o||{};
+    var cv, cs, cm, win, id = "#bar-window", o = o || {};
     
     var process = function(d) {
 		
-		if (!d.has('char.'))
+		if (!d || !d.has('char.'))
 		    return d;
-		    
-		var key = d.match(/([^ ]+?) /)[1];
-		var value = d.match(/[^ ]+? (.*)/)[1];
-		
+		    		
 		try {
 			
+			var key = d.match(/([^ ]+?) /)[1];
+			var value = d.match(/[^ ]+? (.*)/)[1];
+
 			var s = {};
 			s[key] = eval('(' + value + ')');
 
@@ -24,21 +24,23 @@ var MistyBars = function(o) {
 			
 		} catch(err) {
 			log('MistyBars gmcp parse error: '+err);
+			log(d);
 		};
 		
 		return d;
-    }
+   };
     
-	var draw = function(o) {
+	var draw = function() {
     
-        var o = { z: 1 };
+        var z = 1;
         
         win = new Window({
             id: id,
+            title: o.title || 'MistyBars',
             'class': 'bar-window nofade',
             transparent: 1,
             noresize: 1,
-            css: {
+            css: o.css || {
                 height: 130,
                 width: 360,
 		        top: j(window).height() - 140,
@@ -65,13 +67,13 @@ var MistyBars = function(o) {
 		
 		var st = '#bar-window .';
 		
-		j(st + 'bars'  ).css({ 'zIndex': o.z });
-		j(st + 'smoke' ).css({ 'zIndex': ++o.z });
-		j(st + 'bar-wrapper' ).css({ 'zIndex': o.z });
-		j(st + 'black' ).css({ 'zIndex': o.z });
-		j(st + 'status').css({ 'zIndex': ++o.z });
-		j(st + 'label').css({ 'zIndex': ++o.z });
-	}
+		j(st + 'bars'  ).css({ 'zIndex': z });
+		j(st + 'smoke' ).css({ 'zIndex': ++z });
+		j(st + 'bar-wrapper' ).css({ 'zIndex': z });
+		j(st + 'black' ).css({ 'zIndex': z });
+		j(st + 'status').css({ 'zIndex': ++z });
+		j(st + 'label').css({ 'zIndex': ++z });
+	};
 	
 	var redraw = function(d) {
 	
@@ -100,13 +102,13 @@ var MistyBars = function(o) {
 			j(ot + 'mini-manabar' ).animate({ width: parseInt((cv.mana / cm.maxmana)*100) + '%' }, 1200, 'easeInOutExpo');
 			j(ot + 'mini-movebar' ).animate({ width: parseInt((cv.moves / cm.maxmoves)*100) + '%' }, 1200, 'easeInOutExpo');			
 		}
-		
+
 		if (cs) {
 			j(st + 'exp-label').html((cs.tnl==-1)?addCommas(cs.exp):(cs.enl - cs.tnl));
 			j(st + 'tar-label').html(cs.enemy.length?cs.enemy:"<span class='no-target'>no target</span>");
 			j(st + 'tarbar' ).animate({ width: w-(w*(cs.enemypct / 100)) }, 1200, 'easeInOutExpo');
 		}
-	}
+	};
 
 	if (o.process)
 		process = eval('('+o.process+')');
@@ -122,6 +124,7 @@ var MistyBars = function(o) {
 	        title: 'Hide / show the misty status bar.',
 	        click: function() {
 	            j('#bar-window').toggle();
+	            Config.MistyBars.win.front();
 	        }
 	    });
 	});
@@ -129,6 +132,7 @@ var MistyBars = function(o) {
 	draw();
 	
 	return {
-	    process: process
-	}
-}
+	    process: process,
+	    win: win
+	};
+};

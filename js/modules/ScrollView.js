@@ -1,13 +1,13 @@
 var ScrollView = function(o) {
 	
-	var self = this, ws = {}, sesslog = '', freeze, mobile = Config.device.mobile, touch = Config.device.touch;
+	var self = this, ws = {}, sesslog = '', freeze, mobile = Config.device.mobile, touch = Config.device.touch, multi;
 	var cmds = [], cmdi = 0, echo = 1;
 	var keepcom = (Config.getSetting('keepcom') == null || Config.getSetting('keepcom') == 1);
-	
+
 	var o = o||{
 		scrollback: 20 * 1000
 	};
-	
+
 	var id = '#scroll-view';
 	
 	o.local = (Config.getSetting('echo') == null || Config.getSetting('echo') == 1);	  
@@ -18,11 +18,12 @@ var ScrollView = function(o) {
 		css: o.css,
 		'class': 'nofade',
 		max: 1,
+		master: !Config.notrack,
 		closeable: Config.ControlPanel
 	});
 	
-	if (touch) {
-		
+	if (mobile) {
+
 	    j('#page').css({
 	        background: 'none no-repeat fixed 0 0 #000000',
 	        margin: '0px auto'
@@ -35,12 +36,19 @@ var ScrollView = function(o) {
 	    });
 
 	    win.maximize();
-	    
-	    j(id).css({
-	    	top: 0,
-	    	left: 0
-	    });
 	}
+
+	if (touch)
+		j(id).css({ top: 0, left: 0 });
+
+	win.button({
+		title: 'Reconnect.',
+		icon: 'icon-refresh',
+		click: function() {
+			echo('Attempting to reconnect...');
+			Config.socket.reconnect();
+		}
+	});
 	
 	win.button({
 		title: 'Increase the font size.',
@@ -113,31 +121,24 @@ var ScrollView = function(o) {
 	
 	j(id + ' .content').append('\
 		<div class="out nice"></div>\
-		<div class="input" style="width: 97%;padding-right: 40px; position: absolute; bottom: 40px">\
-			<input class="send" autocomplete="on" spellcheck="'+(Config.getSetting('spellcheck')?'true':'false')+'" title="Type a command in this field and press \'Enter\' to send it." placeholder="type your command..." aria-live="polite"/></div>\
+		<div class="input">\
+			<input class="send" autocomplete="on" autocorrect="off" autocapitalize="off" spellcheck="'+(Config.getSetting('spellcheck')?'true':'false')+'" placeholder="type a command..." aria-live="polite"/></div>\
 	');
 	
 	if (mobile) {
-		
 		j(id + ' .out').css({
 			'font-family': 'DejaVu Sans Mono',
 			'font-size': '11px',
 			height: '90%'
 		});
-		
-		j(id + ' .input').css({ 
-			//bottom: 32,
-			position: 'fixed',
-			width: '100%'
-		});	
 	}
 	else {
 		j(id + ' .input').append('<a class="kbutton multiline tip" title="Send multiline input." style="height: 16px !important; padding: 4px 8px !important; margin-left: 6px; position: relative; top: 3px;"><i class="icon-align-justify"></i></a>');
 		
-		var multi = function(e, text) {
+		multi = function(e, text) {
 			var modal = new Modal({
 				title: 'Multiline Input',
-				text: '<textarea class="multitext">'+(text||'')+'</textarea>',
+				text: '<textarea class="multitext" autocorrect="off" autocapitalize="off" spellcheck="'+(Config.getSetting('spellcheck')?'true':'false')+'">'+(text||'')+'</textarea>',
 				closeable: 1,
 				buttons: [
 				     {
@@ -204,9 +205,15 @@ var ScrollView = function(o) {
 			//j(id + ' .send').focus();
 	});
 	
+	if (!Config.device.touch)
+	j(document).on('mouseup', function() {
+		if (!j(':focus').is('input, textarea'))
+			j(id + ' .send').focus();
+	});
+	
 	var scroll = function () { j(id + ' .out').scrollTop(j(id + ' .out').prop('scrollHeight')) };
 	
-	if (Config.device.touch) {	
+	if (Config.device.mobile) {	
 		
 		j(id + ' .send').focus(function() {
 			//this.setSelectionRange(0, 9999);
@@ -317,10 +324,14 @@ var ScrollView = function(o) {
 		}
 		
 		my.append('<span>'+A+'</span>');
-		my.scrollTop(my.prop('scrollHeight'));
+		scroll();
 		
 		if (j(id + ' .freeze').length)
 			j(id + ' .freeze').append('<span>'+A+'</span>');
+	}
+	
+	var scroll = function() {
+		j(id + ' .out').scrollTop(j(id + ' .out').prop('scrollHeight'));
 	}
 	
 	var echo = function(msg) {
@@ -333,7 +344,7 @@ var ScrollView = function(o) {
 			msg = msg.replace(/>/g,'&gt;');
 			msg = msg.replace(/</g,'&lt;');
 			
-			add('<span style="color: gold; opacity: 0.6">' + msg + '</span><br>');
+			add('<span style="font-size: 12px; color: gold; opacity: 0.6">' + msg + '</span><br>');
 		}
 	}
 	
@@ -347,45 +358,47 @@ var ScrollView = function(o) {
 	var echoOff = function() { o.echo = 0 }
 	var echoOn = function() { o.echo = 1 }
 	
-	var sv = {
+	var self = {
 		add: add,
 		echo: echo,
 		echoOff: echoOff,
 		echoOn: echoOn,
 		title: title,
 		id: id,
+		scroll: scroll,
 		win: win
 	}
 
 	var ws = new Socket({
 		host: param('host'),
 		port: param('port'),
-		out: sv
+		proxy: Config.proxy,
+		out: self
 	});
 	
 	if (user && user.id) {
+	
 		Config.MacroPane = new MacroPane({
 			socket: ws
 		});
 		
 		if (!Config.nomacros) {
 			Event.listen('before_send', Config.MacroPane.sub);
-			sv.echo('Activating macros.');
+			self.echo('Activating macros.');
 		}
-		
+
 		Config.TriggerHappy = new TriggerHappy({
 			socket: ws
 		});
 		
 		if (!Config.notriggers) {
 			Event.listen('after_display', Config.TriggerHappy.respond);
-			sv.echo('Activating triggers.');
+			self.echo('Activating triggers.');
 		}
 	}
 	
-	Config.ScrollView = sv;
-		
-	Event.fire('scrollview_ready', null, sv);
+	Config.ScrollView = self;
+	Event.fire('scrollview_ready', null, self);
 
-	return sv
+	return self;
 }

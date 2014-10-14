@@ -1,6 +1,6 @@
 var Config = {
 	
-	debug: window.location.search.has('debug')||0,
+	debug: param('debug') || 0,
 	
 	host: param('host'),
 	
@@ -14,24 +14,38 @@ var Config = {
 			
 	height: param('height')||540,
 	
-	clean: window.location.search.has('clean')||0,
+	top: param('top')||80,
+
+	left: param('left') || 240,
 	
-	solo: window.location.search.has('solo')||0,
+	clean: window.location.search.has('clean') || 0,
 	
-	nocenter: window.location.search.has('nocenter')||0,
+	solo: window.location.search.has('solo') || 0,
+	
+	nocenter: window.location.search.has('nocenter') || 0,
+	
+	notrack: param('notrack') || 0,
+	
+	nodrag: param('nodrag') || 0,
+	
+	embed: param('embed') || 0,
 	
 	collapse: [],
 	
-	dev: window.location.search.has('dev')||0,
-	
-	separator: param('separator')||';',
-	
+	dev: window.location.search.has('dev') || 0,
+
+	onfirst: param('onfirst') || 0,
+
+	separator: window.location.search.has('separator') ? param('separator') : ';',
+
+	proxy: param('proxy') || 'ws://www.cloudgamer.org:6200/',
+
 	view: param('host') + ':' + param('port') + ':' + window.screen.width + 'x' + window.screen.height,
 	
 	device: {
 		touch: 'ontouchstart' in window,
-		lowres: (j(window).width() <= 640 || j(window).height() <= 640),
-		mobile: (j(window).width() <= 640 || j(window).height() <= 640),
+		lowres: (j(window).width() <= 640 && j(window).height() <= 640), 
+		mobile: (j(window).width() <= 640 && j(window).height() <= 640),
 		tablet: ('ontouchstart' in window && j(window).width() > 640),
 		width: j(window).width(),
 		height: j(window).height()
@@ -65,7 +79,7 @@ var Config = {
 		
 		return null;
 	}
-}
+};
 
 log(Config);
 log(stringify(Config.settings));

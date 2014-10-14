@@ -1,20 +1,23 @@
 var Window = function(o) {
 	
-	var id, h, position, width, height, maximized, opt;
+	var id, h, position, width, height, maximized, opt, was_at;
 	var minZ = 100;
 	var view_id = Config.view;
 	
-	o.css = o.css||{
+	o = o || {
+		id: '#scroll-view',
+		title: 'ScrollView'
+	};
+
+	o.css = o.css || {
 		height: 380,
 		width: 380
-	}
+	};
 	
-	o.id = o.id||'#scroll-view';
+	o.tabs = o.tabs || [];
 	
-	if (Config.device.touch) {
-		o.noresize = 1;
+	if (Config.device.touch || param('gui'))
 		o.handle = '.none';
-	}
 	
 	var button = function(o) {
 		j(id + ' .toolbar').append('<i class="icon '+o.icon+' tip" title="'+o.title+'"></i>');
@@ -22,13 +25,36 @@ var Window = function(o) {
 	}
 	
 	var title = function(t) {
-		j(id + ' .title').html(t);
+		if (t) {
+			o.title = t;
+			j(id + ' .title').html(t);
+		}
+		else
+			return o.title;
+	}
+	
+	var resize = function() {
+		
+		var h = j(id).height();
+		
+		if (j(id + ' .handle').length)
+			h -= 18;
+		
+		j(id + ' .content').height(h);
+		j(id + ' .tab-content').height(h - 30);
+		j(id + ' .tab-pane').height(h - 30);
+		
+		renice();	
+	}
+	
+	var renice = function() {
+		j(o.id + ' .nice').each(function() {
+			j(this).getNiceScroll().resize();
+		});
 	}
 	
 	var init = function(o) {
 		
-		opt = o;
-		opt.tabs = [];
 		id = o.id;
 		
 		log('Window.init: '+id);
@@ -48,21 +74,16 @@ var Window = function(o) {
 			</div>');
 			o.handle = '.handle';
 		}
-		else {
-			j(o.id + ' .content').css({ 
-				top: -38,
-				height: '106%'
-			});
-		}
+		else 
+			j(id + ' .content').css({ top: 0 });
 		
 		title(o.title||'');
 
 		if (o.transparent) {
-			j(id + ' .toolbar').hide();
+			j(id + ' .toolbar').remove();
 			j(id + ' .content').css({
 				'background-color': 'transparent',
-				'top': 0,
-				'padding': 0
+				top: 0
 			});
 			j(id).css('border', 'none');
 		}
@@ -74,17 +95,19 @@ var Window = function(o) {
 				click: function() {
 					if (o.onClose)
 						o.onClose();
+					Event.fire('window_close', j(id));
+					j(id + ' .nice').getNiceScroll().remove();
 					j(id).remove();
 				}
 			});
-		
+		/*
 		button({
 			icon: 'icon-minus',
 			title: 'Collapse this window.',
 			click: collapse
 		});
 		
-		/*
+		
 		if (o.max) {
 			button({
 				icon: 'icon-unchecked',
@@ -100,27 +123,14 @@ var Window = function(o) {
 		if (o.transparent)
 			o.handle = '.content';
 		
-		if (!Config.device.mobile && !param('kong'))
-		j(id)
-		.draggable({
-				/*stack: ".ui-group",*/
-				handle: o.handle,
-				snap: 1,
-				stop: function(e, u) {
-					j(id + ' .nice').getNiceScroll().resize();
-					j('.nicescroll-rails').css('z-index', j(id).css('z-index'));
-					savepos();
-				}
-			})
-		.click(function() {
-			//log('Window.click');
-			front();
-		});
-
-		//j(id + ' .handle').dblclick(collapse);
+		j(id).click(front);
 		
-		j(id)
-		.css({
+		if (!Config.device.mobile && !param('kong') && !param('gui') && !o.nodrag && !Config.nodrag)
+			draggable();
+
+		j(id + ' .handle').dblclick(hide);
+		
+		j(id).css({
 			'overflow':'hidden',
 		});
 		
@@ -128,13 +138,14 @@ var Window = function(o) {
 			j(id).resizable({
 				minWidth: 60,
 				width: 300,
+				handles: 'all',
 				stop: function(e, u) { 	
-					//j(id + ' .content').height(j(o.id).height()-12);
-					j(id + ' .nice').getNiceScroll().resize();
-					j('.nicescroll-rails').css('z-index', j(id).css('z-index'));
-					savepos();
+					resize();
+					
 					if (o.onResize)
-						o.onResize.call();
+						o.onResize();
+					
+					savepos();
 				}
 			});
 		}
@@ -164,11 +175,50 @@ var Window = function(o) {
 		var default_pos = getpos(o);
 		
 		j(id).css(o.css);
-		//j(id + ' .content').height(j(id).height()-12);
+		
+		if (j(id + ' .handle').length)
+			j(id + ' .content').height(j(id).height() - 18);
 	}
 	
-	var maximize = function() {
+	var draggable = function() {
+	
+		try {
+			j(id).draggable('destroy');
+		} catch(ex) {}
 		
+		j(id).draggable({
+			/*stack: ".ui-group",*/
+			handle: o.handle,
+			snap: 1,
+			//containment: "window",
+			//iFrameFix: true,
+			start: function(e, u) {
+				was_at = u.position;
+				j(this).css({ bottom: '', right: '' });
+			},
+			stop: function(e, u) {
+				
+				if (o.master) {
+				
+					j('.window').not('#scroll-view').animate({
+						top: '-=' + (was_at.top - u.position.top) + 'px',
+						left: '-=' + (was_at.left - u.position.left) + 'px'
+					}, function() {
+						resize();
+						savepos();
+					});
+					
+					return;
+				}
+				
+				resize();
+				savepos();
+			}
+		});
+	};
+	
+	var maximize = function() {
+
 		position = j(id).position();
 		width = j(id).width();
 		height = j(id).height();
@@ -180,28 +230,21 @@ var Window = function(o) {
 			left: 0
 		});
 		
+		return self;
 		//j(id + ' .icon-unchecked').hide();
 		//j(id + ' .icon-columns').show();
-		front();
-		
-		maximized = 1;
-	}
+	};
 	
-	var minimize = function() {
-		
-		j(id).css({
-			width: width,
-			height: height,
-			top: position.top,
-			left: position.left
-		});
-		
-		//j(id + ' .icon-unchecked').show();
-		//j(id + ' .icon-columns').hide();
-		j(id + ' .out').scrollTop(j(id + ' .out')[0].scrollHeight);
-		
-		maximized = 0;
-	}
+	var show = function() {
+		j(id).show();
+		front();
+		return self;
+	};
+	
+	var hide = function() {
+		j(id).hide();
+		return self;
+	};
 	
 	var collapse = function() {
 		
@@ -223,10 +266,13 @@ var Window = function(o) {
 	
 	var front = function() {
 
-		log('Window.front: ' + id);
-		
 		if (j(id).hasClass('nofront'))
 			return;
+	
+		if (Config.front == id)
+			return;
+
+		log('Window.front: ' + id);
 
 		j(id).css('opacity', 1);
 		
@@ -237,17 +283,20 @@ var Window = function(o) {
 			if (!j(this).hasClass('window'))
 				return;
 			
-			Z.push({ id: '#'+j(this).attr('id'), z: parseInt(j(this).css('z-index')) });
+			Z.push({ 
+				id: '#'+j(this).attr('id'), 
+				z: parseInt(j(this).css('z-index')) 
+			});
 			
 			if (!j(this).hasClass('nofade'))
 				j(this).css('opacity', 0.3);
 		});
 
-		if (Z.length < 2)
-			return;
-
+		if (!Z.length)
+			return log('solo window. no front needed');
+	
 		Z.sort(function(a, b) {
-			return(a.z > b.z)
+			return(a.z > b.z);
 		});
 		
 		Z.push({ id: id, z: 0 });
@@ -258,46 +307,73 @@ var Window = function(o) {
 		Config.front = id;
 		
 		log('Window.front(ed): ' + id);
+		Event.fire('window_front', id);
 		savepos();
+		
+		return self;
 	}
 	
 	var savepos = function() {
 		
-		if (!user.id || !Config.host || param('kong'))
+		if (!user.id || !Config.host || param('kong') || param('gui'))
 			return;
 			
 		if (!user.pref.win)
 			user.pref.win = {};
 		
-		user.pref.win[view_id] = {};
+		if (!user.pref.win[view_id])
+			user.pref.win[view_id] = {};
 		
 		j('.window').each(function() {
-	
-			user.pref.win[view_id]['#'+j(this).attr('id')] = {
-				offset: j(this).offset(),
+			
+			var id = j(this).attr('id');
+			var offs = j(this).offset();
+			
+			/*
+			if (offs.top < 0)
+				j(this).css({ top: 0 });
+			
+			if (offs.top >= j(window).height())
+				j(this).css({ top: parseInt(j(window).height() - j(this).height()) });
+			
+			if (offs.left < 0)
+				j(this).css({ left: 0 });
+			
+			if (offs.left >= j(window).width())
+				j(this).css({ left: parseInt(j(window).width() - j(this).width()) });
+			
+			offs = j(this).offset();
+			
+			offs.top = parseInt(offs.top);
+			offs.left = parseInt(offs.left);
+			*/
+			var o = {
+				offset: offs,
 				width: j(this).width(),
 				height: j(this).height(),
 				zIndex: parseInt(j(this).css('z-index')),
 				collapsed: j(this).find('.content').hasClass('hidden')?1:0
 			};
 			
-			log('Saving window position: ' + stringify(user.pref.win[view_id]['#'+j(this).attr('id')]));
+			//console.log(o);
+			user.pref.win[view_id]['#'+id] = o;
+			log('Saving window position: #' + id + ' ' + stringify(user.pref.win[view_id]['#'+id]));
 		});
-	
+		
 		j.post('?option=com_portal&task=set_pref', { pref: stringify(user.pref) });	
 	}
 	
 	var getpos = function(o) {
 
-		if (!user.id || !user.pref || !user.pref.win || !Config.host || param('kong'))
+		if (!user.id || !user.pref || !user.pref.win || !Config.host || param('kong') || param('gui'))
 			return 1;
 		
-		log('Restoring saved position: '+o.id);
+		log('Restoring saved position:  '+ o.id);
 		
 		var prefs = user.pref.win;
 		
-		while (Object.keys(prefs).length > 5) {
-			log('Trimming window pref length: '+Object.keys(prefs).length);
+		while (Object.keys(prefs).length > 20) {
+			log('Trimming window pref length: ' + Object.keys(prefs).length);
 			var i = 0;
 			for (var p in prefs) {
 				if (!i) {
@@ -307,54 +383,79 @@ var Window = function(o) {
 			}
 		}
 
-		if (!user.pref.win[view_id] || !user.pref.win[view_id][o.id])
+		if (!prefs[view_id] || !prefs[view_id][o.id]) {
+			log('no stored position for ' + o.id);
+			log(prefs);
 			return 1;
+		}
 		
-		var pref = user.pref.win[view_id][o.id];
-	
-		o.css.left = (pref.offset.left < 0)?0:pref.offset.left;
-		o.css.top = (pref.offset.top < 0)?0:pref.offset.top;
-		o.css.width = pref.width;
-		o.css.height = pref.height;
+		var pref = prefs[view_id][o.id];
+		
+		//log('remembered position: ');
+		//log(pref);
+		
+		if (pref.offset.left < 0)
+			pref.offset.left = 0;
+		
+		if (pref.offset.left > j(window).width())
+			pref.offset.left = j(window).width()-pref.width;
+		
+		if (pref.offset.top < 0)
+			pref.offset.top = 0;
+		
+		if (pref.offset.top > j(window).height())
+			pref.offset.top = j(window).height()-pref.height;
+
+		o.css.left = pref.offset.left;
+		o.css.top = pref.offset.top;
+		
+		o.css.width = pref.width||o.css.width;
+		o.css.height = pref.height||o.css.height;
+		
 		o.css.zIndex = pref.zIndex||o.css.zIndex;
 		
 		if (pref.collapsed)
 			collapse();
-		
+
 		log(stringify(o));
 		
 		return 0;
 	}
 	
 	var tab = function(t) {
+
+		t.html = t.html || '';
+		console.log(t);
 		
 		var i = o.tabs.length;
 		o.tabs.push(t);
 
 		if (!j(o.id + ' .content .tabs').length) {
-			j(o.id + '.content').prepend('\
-				<ul class="tabs nav nav-tabs"></ul>\
-				<div class="tab-content"></div>');
+			j(o.id + ' .content').prepend('<ul class="tabs nav nav-tabs"></ul><div class="tab-content"></div>');
 			j(o.id + ' .content').css('background-color', 'transparent');
-			j(o.id + ' .tabs:hover').css({ cursor: move });
+			j(o.id + ' .tabs:hover').css({ cursor: 'move' });
+			o.handle = '.nav-tabs';
+			draggable();
 		}
+				
+		var html = '<li><a class="kbutton" data-toggle="tab" href="#tab-'+i+'">'+t.name+'</a></li>';
 		
-		var html = '<li><a class="kbutton '+t.name+'" data-toggle="tab" href="#tab-'+i+'">'+t.name+'</a></li>';
-		
-		if (!t.after)
-			j(o.id + ' .tabs').append(html);
+		if (!t.after && !t.before)
+			j(o.id + ' .nav-tabs').append(html);
 		else
-			j(html).insertAfter(j(o.id + ' .chat-tabs .'+t.after).parent());
+		if (t.before)
+			j(html).insertBefore(j(o.id + ' .nav-tabs a:contains("'+t.before+'")').parent());
+		else
+			j(html).insertAfter(j(o.id + ' .nav-tabs a:contains("'+t.after+'")').parent());
 		
-		j(o.id + ' .tab-content').append('<div id="tab-'+i+'" class="tab-pane nice'+(i==0?' active':'')+'">'+(t.html||'')+'</div>');
+		j(o.id + ' .tab-content').append('<div id="tab-'+i+'" class="'+(t['class']||'')+' tab-pane nice'+(i==0?' active':'')+'">'+(t.html||'')+'</div>');
 		
-		j('#tab-'+i).css({
-			width: j(o.id).width() - 10,
-			height: j(o.id).height() - 50,
-		})
-		.niceScroll({ 
-			cursorborder: 'none', 
-			touchbehavior: 1
+		resize();
+		
+		j(o.id + ' #tab-'+i).niceScroll({ 
+			cursorborder: 'none',
+			touchbehavior: 1,
+			height: j(o.id + ' #tab-'+i).height()
 		});
 		
 		return o.id + ' #tab-' + i;
@@ -362,13 +463,21 @@ var Window = function(o) {
 	
 	init(o);
 	
-	return {
+	var self = {
 		title: title,
 		button: button,
+		tab: tab,
 		front: front,
-		minimize: minimize,
 		maximize: maximize,
-		maximized: maximized
+		show: show,
+		hide: hide,
+		maximized: maximized,
+		resize: resize
 	}
 	
+	j(o.id).get(0).win = self;
+	
+	Event.fire('window_open', self);
+	
+	return self;
 }

@@ -9,6 +9,31 @@ var TriggerHappy = function(o) {
 	
 	var init = function() {
 
+		if (Config.onfirst)
+			Event.listen('before_process', function(d) {
+				
+				if (Config.onfirst) {
+					
+					var a = Config.onfirst.split(';');
+					
+					if (a.length && a.length > 1 && d.has(a[0])) {
+						for (var i = 1; i < a.length; i++) {
+							(function(a, i) {
+								return setTimeout(function() {
+									Config.socket.write(a, i + '\r\n');
+									Config.socket.echo('\n');
+								}, i * 600);
+							})(a[i], i);
+						}
+
+						log('sending onfirst text');
+						delete Config.onfirst;
+					}
+				}
+				
+				return d;
+			});
+		
 		if (Config.notriggers) 
 			return Config.socket.echo('Triggers disabled by official code.');
 		
@@ -19,7 +44,7 @@ var TriggerHappy = function(o) {
 			}
 		}
 		
-		if (P[param('profile')])
+		if (P && P[param('profile')])
 			pTriggers = P[param('profile')].triggers;
 		
 		triggers = [];

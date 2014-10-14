@@ -175,7 +175,8 @@ srv = {
 
 		wsServer = new ws({
 			httpServer: webserver,
-			autoAcceptConnections: false
+			autoAcceptConnections: false,
+			keepalive: true
 		})
 		.on('request', function(request) {
 
@@ -209,7 +210,7 @@ srv = {
 			})
 			.on('error', function(err) {
 				srv.log((new Date()) + '(ws) peer ' + s.remoteAddress + ' error: ' + err);
-				srv.closeSocket(s);
+				//srv.closeSocket(s);
 			});
 			
 		})
@@ -279,6 +280,16 @@ srv = {
 			}
 		}
 		
+		if (req.msdp && s.ts) {
+			try {
+				srv.log('Attempt msdp send: '+stringify(req.msdp));
+				srv.sendMSDP(s, req.msdp);
+			}
+			catch(ex) {
+				srv.log(ex);
+			}
+		}
+		
 		return 1;
 	},
 	
@@ -307,13 +318,34 @@ srv = {
 			s.ts.send('[7z');	
 	},
 	
+	sendMSDP: function (s, msdp) {
+	
+		var p = srv.prt;
+		srv.log('sendMSDP '+ stringify(msdp), s);
+		
+		if (!msdp.key || !msdp.val)
+			return;
+		
+		s.ts.send(new Buffer([p.IAC, p.SB, p.MSDP, p.MSDP_VAR]));
+		s.ts.send(msdp.key);
+		
+		msdp.val = msdp.val.pop?msdp.val:[msdp.val];
+		
+		for (var i = 0; i < msdp.val.length; i++) {
+			s.ts.send(new Buffer([p.MSDP_VAL]));
+				s.ts.send(msdp.val[i]);
+		}
+		
+		s.ts.send(new Buffer([p.IAC, p.SE]));
+	},
+	
 	sendMSDPPair: function (s, key, val) {
 		var p = srv.prt;
 		srv.log('sendMSDPPair '+key+'='+val, s);
 		s.ts.send(new Buffer([p.IAC, p.SB, p.MSDP, p.MSDP_VAR]));
-			s.ts.send(' '+key+' ');
+			s.ts.send(key);
 		s.ts.send(new Buffer([p.MSDP_VAL]));
-			s.ts.send(' '+val+' ');
+			s.ts.send(val);
 		s.ts.send(new Buffer([p.IAC, p.SE]));
 	},
 	
@@ -336,12 +368,14 @@ srv = {
 			srv.log('new connection to ' + host + ':' + port + ' for ' + s.remoteAddress);
 		});
 		
+		//s.ts.setEncoding('binary');
+		
 		s.ts.send = function(data) {
 			if (s.debug) {
 				var raw = [];
 					for (var i = 0; i < data.length; i++)
 						raw.push(u.format('%d', data[i]));
-				srv.log('write bin: '+raw, s);
+				//srv.log('write bin: '+raw, s);
 			}
 			s.ts.write(data);
 		};
@@ -525,9 +559,9 @@ srv = {
 			for (i = 0; i < data.length; i++)	{
 				if (data[i] == p.IAC && data[i+1] == p.SB && data[i+2] == p.NEW && data[i+3] == p.REQUEST) {
 					s.ts.send(new Buffer([p.IAC, p.SB, p.NEW, p.IS, p.IS]));
-					s.ts.send(' "IPADDRESS" ');
+					s.ts.send('IPADDRESS');
 					s.ts.send(new Buffer([p.REQUEST]));
-					s.ts.send(' "' + s.remoteAddress + '" ');
+					s.ts.send(s.remoteAddress);
 					s.ts.send(new Buffer([p.IAC, p.SE]));
 					srv.log("IAC NEW-ENV IP VAR SEND");
 					s.new_handshake = 1;
@@ -626,29 +660,44 @@ srv = {
 		
 		if (!chatlog)
 			chatlog = [];
-		
+
 		if (req.channel && req.channel == 'op') {
 
 			//chatlog = chatlog.filter(function(l) { return (l[1].channel == 'status')?0:1 });
-			var temp = chatlog.concat(), users = [];
-
-			for (var i = 0; i < ss.length; i++)
-				if (ss[i].ts)
-					users.push('<span style="color: #01c8d4">' + (ss[i].name||'Guest') + '</span>@'+ss[i].host);
-					
-			temp.push([new Date(), { channel: 'status', name: 'App users:', msg: users.join(', ')}]);
+			var temp = chatlog.concat().slice(-300), users = [];
 			
-			s.sendUTF("portal.chatlog " + stringify(temp));
+			for (var i = 0; i < ss.length; i++) {
+
+				if (!ss[i].ts && ss[i].name)
+					continue;
+
+				if (ss[i].ts)
+					//var u = '\x1b<span style="color: #01c8d4"\x1b>' + (ss[i].name||'Guest') + '\x1b</span\x1b>@'+ss[i].host;
+					var u = (ss[i].name||'Guest') + '@'+ss[i].host;
+				else 
+					var u = (ss[i].name||'Guest') + '@chat';
+				
+				if (users.indexOf(u) == -1)
+					users.push(u);
+			}
+
+			temp.push([new Date(), { channel: 'status', name: 'online:', msg: users.join(', ')}]);
+			var t = stringify(temp);
+			t = this.chatCleanup(t);
+			
+			s.sendUTF("portal.chatlog " + t);
 			//fs.writeFileSync("./chat.json", stringify(chatlog));
 			return;
 		}
 		
 		delete req.chat;
 		chatlog.push([new Date(), req]);
+		req.msg = this.chatCleanup(req.msg);
 		
-		for (var i = 0; i < ss.length; i++)
+		for (var i = 0; i < ss.length; i++) {
 			if (ss[i].chat)
 				ss[i].sendUTF("portal.chat " + stringify(req));
+		}
 		
 		var res = fs.writeFileSync("./chat.json", stringify(chatlog));
 	},
@@ -658,6 +707,14 @@ srv = {
 		for (var i = 0; i < ss.length; i++)
 			if (ss[i].chat)
 				srv.chat(ss[i], { channel: 'op' });
+	},
+	
+	chatCleanup: function(t) {
+		t = t.replace(/([^\x1b])</g,'$1&lt;');
+		t = t.replace(/([^\x1b])>/g,'$1&gt;');
+		t = t.replace(/\x1b>/g,'>');
+		t = t.replace(/\x1b</g,'<');
+		return t;
 	},
 	
 	originAllowed: function(o) {

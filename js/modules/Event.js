@@ -2,9 +2,16 @@ var Event = {
 	
 	q: {
 		'socket_open': [],
+		'socket_data': [],	
 		'socket_before_close': [],
 		'socket_close': [],
-		'socket_data': [],		
+		'chat_open': [],
+		'chat_data': [],		
+		'chat_before_close': [],
+		'chat_close': [],
+		'telnet_open': [],	
+		'telnet_before_close': [],	
+		'telnet_close': [],	
 		'before_process': [],
 		'after_protocols': [],
 		'before_html': [],
@@ -15,9 +22,20 @@ var Event = {
 		'before_send': [],
 		'scrollview_ready': [],
 		'chatterbox_ready': [],
+		'will_msdp': [],
 		'msdp': [],
+		'will_gmcp': [],
 		'gmcp': [],
+		'will_atcp': [],
 		'atcp': [],
+		'will_mxp': [],
+		'mxp_frame': [],
+		'mxp_dest': [],
+		'window_open': [],
+		'window_close': [],
+		'window_front': [],
+		'window_hide': [],
+		'window_show': []
 	},
 	
 	fire: function(event, data, caller) {
@@ -72,4 +90,4 @@ var Event = {
 		delete q[event];
 		log('Event.js: Event destroyed: ' + event);
 	}
-}
+};

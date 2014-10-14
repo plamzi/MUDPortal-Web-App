@@ -10,12 +10,15 @@ var Socket = function(o) {
 	var cmds = [], cmdi = 0, echo = 1;
 	var keepcom = (Config.getSetting('keepcom') == null || Config.getSetting('keepcom') == 1);
 	
+	if (proxy.has('cloudgamer'))
+		delete o.proxy;
+	
 	var prot = {
 		IS:			0,
 		REQUEST:	1,
 		ACCEPTED:	2,
 		REJECTED:	3,
-		TTYPE:  	24,		
+		TTYPE:  	24,
 		ESC:		33,
 		CHARSET: 	42,
 		MCCP2:		86,
@@ -55,14 +58,17 @@ var Socket = function(o) {
 
 		if (o.onOpen)
 			o.onOpen(evt);
+
+		if (o.type == 'telnet')
+			Event.fire('socket_open', self);
 		
-		Event.fire('socket_open', self);
-		
+		Event.fire(o.type + '_open', self);
+		/*
 		setInterval(function() {
 			ws.send('{ "ping": 1 }');
-		}, 10000);
+		}, 10000); */
 		
-	}
+	};
 	
 	var onClose = function(evt) {
 		
@@ -76,17 +82,24 @@ var Socket = function(o) {
 			ZLIB.inflateEnd(z_stream);
 		
 		if (out)
-			out.add('<span style="color: green;">Remote server has disconnected. Refresh page to reconnect.<br></span>');
+			out.add('<br><span style="color: green;">Remote server has disconnected. Refresh page to reconnect.<br></span>');
 		
 		if (o.onClose)
 			o.onClose(evt);
 		
 		Event.fire('socket_close', self);
+		Event.fire(o.type + '_close', self);
 		
 		log('Socket: closed');
-	}
+	};
 
 	var onMessage = function (e) {
+		
+		if (o.type == 'chat') {
+			log('chat_data');
+			Event.fire(o.type + '_data', e.data);
+			return;
+		}
 		
 		if (Event.q['socket_data']) {
 			var raw = e.data;
@@ -96,6 +109,23 @@ var Socket = function(o) {
 				return;
 		}
 		
+
+		if (Config.base64) {
+
+			try {
+				var bits = new Base64Reader(e.data);
+				var translator = new Utf8Translator(bits);
+				var reader = new TextReader(translator);
+				buff += reader.readToEnd();
+			}
+			catch(ex) {
+				log('Attempt to base64-decode failed:');
+				buff += e.data;
+			}
+			
+			return process();
+		}
+			
 		if (!z_lib) {
 			try {
 				var bits = new Base64Reader(e.data);
@@ -129,23 +159,19 @@ var Socket = function(o) {
 		}
 		
 		process();
-	}
+	};
   
 	var	onError = function(evt) {
-		out.add('<span style="color: red;">Error: telnet proxy may be down.<br></span>');
-	}
+		out.add('<span style="font-size: 13px; color: red;">Error: telnet proxy may be down.<br></span>');
+	};
 
 	var getHistory = function() {
 		//log(cmds);
 		return cmds;	
-	}
+	};
 	
 	var send = function(msg) {
 
-		console.log('Socket.send');
-		
-		log(msg);
-		
 		msg = msg.trimm();
 		msg = Event.fire('before_send', msg, self);
 		
@@ -154,19 +180,44 @@ var Socket = function(o) {
 			msg = msg.replace(re, '\r\n');
 		}
 		
-		if (ws.send && connected)
+		log('Socket.send: ' + msg);
+		
+		if (ws.send && connected) {
+			if (out)
+				out.echo(msg);
 			ws.send(msg + '\r\n');
+		}
 		else 
 			if (out)
-				out.add('<span style="color: green;">WARNING: please connect first.<br></span>');
-		if (out)
-			out.echo(msg);
-	}
+				out.add('<span style="font-size: 13px; color: green;">WARNING: please connect first.<br></span>');
+				
+		return self;
+	};
 	
 	var sendBin = function(msg) {
+		if (!connected)
+			return console.log('attempt to sendBin before socket connect');
 		log('Socket.sendBin: ' + msg);
 		ws.send(stringify({ bin: msg }));
-	}
+		return self;
+	};
+	
+	var sendMSDP = function(msg) {
+		if (!connected)
+			return console.log('attempt to sendMSDP before socket connect');
+		log('Socket.sendMSDP: ' + stringify(msg));
+		ws.send(stringify({ msdp: msg }));
+		return self;
+	};
+	
+	var sendGMCP = function(msg) {
+		if (!connected)
+			return console.log('attempt to sendGMCP before socket connect');
+		//log('Socket.sendGMCP: ' + stringify(msg));
+		ws.send(stringify({ gmcp: msg }));
+		return self;
+	};
+	
 	/*
 	var multiprocess = function()  {
 		var i = 0, limit = 100, processing = 0, busy = 0;
@@ -192,35 +243,79 @@ var Socket = function(o) {
 			out.add(B);
 		
 		Event.fire('after_display', B);
-	}
+	};
 	
 	var prepare = function(t) {
 		
 		log(t);
 		
-		/* prevent splitting ansi escape sequences & MXP */
-		if (t.match(/(\x1b|\x1b\[|\x1b[^mz>]+?[^mz>])$/)) {
-			log('Code split protection is waiting for more input.');
+		/* prevent split oob data */
+		if (t.match(/\xff\xfa[^\xff\xf0\x01]+$/)) {
+			log('protocol split protection waiting for more input.');
+			buff = t;
+			//log(buff);
+			return '';
+		}
+
+		if (Config.mxp.enabled()) {
+		
+			var mxp = t.match(/\x1b\[[1-7]z/g);
+			
+			if (mxp && (mxp.length % 2)) {
+				console.log('mxp split protection waiting for more input: ' + mxp.length);
+				console.log(t);
+				buff = t;
+				//log(buff);
+				return '';
+			}
+		}
+		
+		if (t.match(/\x1b\[[^mz]+$/)) {
+			log('ansi split protection is waiting for more input.');
 			buff = t;
 			return '';
 		}
 		
+		if (t.match(/<dest/i)) {
+			if (!t.match(/<\/dest/i)
+				|| (t.match(/<dest/gi).length != t.match(/<\/dest/gi).length)
+			) {
+				buff = t;
+				return '';
+			}
+		}
+
 		t = Event.fire('before_process', t);
 
-		/*
-		 if (t.has('\x01') && Config.debug)
-			for (var i = 0; i < t.length; i++)
-				log(t[i] + ': ' + String.charCodeAt(t[i]));
-		 */
-		
 		/* msdp */
+		
+		if (t.has('\xff\xfb\x45')) { /*IAC WILL MSDP */
+			console.log('Got IAC WILL MSDP');
+			Event.fire('will_msdp', self);
+			t = t.replace(/\xff\xfb\x45/, '');
+		}
+
+		if (t.has('\xff\xfb\xc9')) { /*IAC WILL GMCP */
+			console.log('Got IAC WILL GMCP');
+			Event.fire('will_gmcp', self);
+			t = t.replace(/\xff\xfb\xc9/, '');
+		}
+
 		if (t.has('\xff\xfaE')) { 
 			var m = t.match(/\xff\xfaE([^]+?)\xff\xf0/gm);
 			//log('MSDP from server');
 			if (m && m.length) {
 				for (i = 0; i < m.length; i++) {
-					log(m[i]);
-					var d = m[i].substring(3, m[i].length-2);
+					var d = m[i].substring(4, m[i].length-2);
+					log('detected msdp:');
+					d = d
+					.replace('/\x01/g', 'MSDP_VAL')
+					.replace('/\x03/g', 'MSDP_TABLE_OPEN')
+					.replace('/\x04/g', 'MSDP_TABLE_CLOSE')
+					.replace('/\x05/g', 'MSDP_ARRAY_OPEN')
+					.replace('/\x06/g', 'MSDP_ARRAY_CLOSE')
+					.split('\x02');
+					log(d);
 					Event.fire('msdp', d);
 					t = t.replace(m[i], '');
 				}
@@ -242,6 +337,7 @@ var Socket = function(o) {
 			if (m && m.length) {
 				for (i = 0; i < m.length; i++) {
 					var d = m[i].substring(3, m[i].length-2);
+					log('detected gmcp:' + d);
 					Event.fire('gmcp', d);
 					log("gmcp: "+d);
 					t = t.replace(m[i], '');
@@ -260,13 +356,15 @@ var Socket = function(o) {
 			if (m && m.length) {
 				for (i = 0; i < m.length; i++) {
 					var d = m[i].substring(3, m[i].length-2);
+					log('detected atcp:' + d);
 					Event.fire('atcp', d);
 					t = t.replace(m[i], '');
 				}
 			}
 		}
-		
-		t = Event.fire('after_protocols', t, self);
+
+		if (t.has('\xff\xfb\x5b') && Config.base64)
+			ws.send('\xff\xfd\x5b');
 		
 		t = t.replace(/([^\x1b])</g,'$1&lt;');
 		t = t.replace(/([^\x1b])>/g,'$1&gt;');
@@ -293,6 +391,16 @@ var Socket = function(o) {
 			t = t.replace(/\xff.\x01/g,'');
 		}
 		
+		//log('after_protocols: '+t);
+		
+		t = Event.fire('after_protocols', t, self);
+		
+		if (t.has('\x01') && Config.debug) {
+			log('Unhandled IAC sequence:');
+			for (var i = 0; i < t.length; i++)
+				log(t[i] + ': ' + String.charCodeAt(t[i]));
+		}
+
 		if (t.has('\x07'))
 			new Audio('/app/sound/ding.mp3').play();
 		
@@ -303,8 +411,8 @@ var Socket = function(o) {
 		t = t.replace(/\xff\xfa.+\xff\xf0/g,'');
 		t = t.replace(/\xff(\xfa|\xfb|\xfc|\xfd|\xfe)./g,'');
 		t = t.replace(/\x07/g,''); //bell
-		t = t.replace(/\x1b\[1;1/g,''); //clear screen
-		t = t.replace(/ÿ(ù|ï)/g,'');
+		t = t.replace(/\x1b\[1;1/g,''); //clear screen, ignore for now
+		t = t.replace(/([ÿùïð])/g,'');
 		t = t.replace(/\x1b\[[A-Z0-9]/gi,''); //erase unsupported ansi control data
 		t = t.replace(';0;37',''); //erase unsupported ansi control data
 		//t = t.replace(/\x1b/g,'');
@@ -323,37 +431,58 @@ var Socket = function(o) {
 		t = Event.fire('before_display', t);
 
 		return t;
-	}
+	};
 	
 	var connect = function() {
+		log("Socket: setting websocket proxy to " + proxy);
 		log('Socket: connecting');
 		ws = new WebSocket(proxy);
-		ws.onopen = function(e) { onOpen(e) };
-		ws.onclose = function(e) { onClose(e) };
-		ws.onmessage = function(e) { onMessage(e) };
-		ws.onerror = function(e) { onError(e) };
-	}
+		ws.onopen = function(e) { onOpen(e); };
+		ws.onclose = function(e) { onClose(e); };
+		ws.onmessage = function(e) { onMessage(e); };
+		ws.onerror = function(e) { onError(e); };
+		window.onbeforeunload = function() {
+			ws.onclose = function () {};
+			ws.close();
+		};
+	};
+	
+	var reconnect = function() {
+		
+		if (connected) {
+			ws.onclose = function () {};
+			ws.close();
+		}
+		
+		connect();
+	};
 	
 	var echo = function(msg) {
 		out.echo(msg);
-	}
+	};
 
-	if (o.proxy && out)
-		out.add('<span style="color: green;">Setting websocket proxy to '+o.proxy+'.<br></span>');
+	//if (o.proxy && out)
+		//out.add('<span style="color: green;">Setting websocket proxy to '+proxy+'.<br></span>');
 
 	var self = {
 		send: send,
 		sendBin: sendBin,
+		sendMSDP: sendMSDP,
+		sendGMCP: sendGMCP,
 		echo: echo,
-		write: function(d) { if (connected) { ws.send(d + '\r\n'); log('Socket.write: '+d) } },
-		getProxy: function() { return proxy },
-		getSocket: function() { return ws },
-		connected: function() { return connected }
-	}
+		type: function() { return o.type },
+		write: function(d) { if (connected) { ws.send(d + '\r\n'); log('Socket.write: '+d); } },
+		getProxy: function() { return proxy; },
+		getSocket: function() { return ws; },
+		connected: function() { return connected; },
+		reconnect: reconnect,
+		process: process
+	};
 	
+	if (o.type == 'telnet')
+		Config.socket = Config.Socket = self;
+		
 	connect();
 
-	Config.socket = Config.Socket = self;
 	return self;
-	
-}
+};
