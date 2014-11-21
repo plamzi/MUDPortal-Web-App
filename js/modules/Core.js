@@ -23,7 +23,7 @@ if (Config.embed)
 	j('body#page').css({ background: 'transparent'});
 	
 j(document).ready(function () {
-	if (Config.clean) {
+	if (Config.bare) {
 		j('#header').remove();
 		j('#maininner #content').attr('id', 'app-content');
 	}
@@ -41,13 +41,7 @@ j(document).ready(function () {
 		});
 	}
 });
-	
-if (Config.host && Config.port)
-	j('head').append('<script type="text/javascript" src="http://www.mudportal.com/index.php?option=com_portal&task=get_official&host='+Config.host+':'+Config.port+'"></script>');
 
-if (Config.dev)
-	j('head').append('<script type="text/javascript" src="http://www.mudportal.com/index.php?option=com_portal&task=get_dev&host='+Config.host+':'+Config.port+'"></script>');
- 
 if (Config.device.touch) {
 	document.ontouchmove = function(e) { e.preventDefault() }
 	j('head').append('<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />\
@@ -77,18 +71,21 @@ if (!Config.nocore) {
 
 		if (!Config.embed && !Config.device.mobile && !param('kong')) {
 			Config.Toolbar = new Toolbar();
+			Config.Toolbar.update();
 			Event.listen('window_open', Config.Toolbar.update);
 			Event.listen('window_close', Config.Toolbar.update);
 			Event.listen('window_front', Config.Toolbar.front);
 		}
 	}
 	
-	if (!Config.device.touch && user.guest)
+	if (window.user && user.guest && !Config.device.touch)
 		j('.app').prepend('<a class="right" style="opacity:0.5;margin-right: 8px" href="/component/comprofiler/login" target="_self"><i class="icon-sun"></i> login</a>');
 }
 
-j('body').tooltip({ 
-	selector: '.tip',
-	html: true,
-	position: { my: 'center bottom', at: 'center top' }
-});
+if (!Config.device.touch)
+	j('body').tooltip({ 
+		selector: '.tip',
+		container: 'body',
+		html: true,
+		position: { my: 'center bottom', at: 'center top' }
+	});

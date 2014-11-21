@@ -1,7 +1,7 @@
 var Socket = function(o) {
 	
-	var self = this, ws = {}, out = o.out||Config.ScrollView, connected = 0;	
-	var proxy = o.proxy||'ws://www.cloudgamer.org:6200/';
+	var self = this, ws = {}, out = o.out || Config.ScrollView, connected = 0;	
+	var proxy = o.proxy || 'ws://www.cloudgamer.org:6200/';
 	o.type = o.type||'telnet';
 	var host = o.host, port = o.port;
 	var buff = '';
@@ -52,7 +52,7 @@ var Socket = function(o) {
 				debug:	Config.debug,
 				client: o.client,
 				ttype: o.ttype,
-				name: user.username||'Guest'
+				name: window.user ? user.username : 'Guest'
 			}));
 		}
 
@@ -96,7 +96,7 @@ var Socket = function(o) {
 	var onMessage = function (e) {
 		
 		if (o.type == 'chat') {
-			log('chat_data');
+			log('Socket.onMessage chat_data');
 			Event.fire(o.type + '_data', e.data);
 			return;
 		}
@@ -232,63 +232,66 @@ var Socket = function(o) {
 		}, 100);
 	}*/
 	
-	var process = function() {
+	var process = function(force) {
 
 		if (!buff.length) 
 			return;
 			
 		var B = buff;
 		buff = '';
-		B = prepare(B);
-			out.add(B);
 		
-		Event.fire('after_display', B);
+		B = prepare(B, force);
+		
+		if (B) {
+			out.add(B);
+			Event.fire('after_display', B);
+		}
 	};
 	
-	var prepare = function(t) {
-		
-		log(t);
-		
+	var prepare = function(t, force) {
+
 		/* prevent split oob data */
 		if (t.match(/\xff\xfa[^\xff\xf0\x01]+$/)) {
 			log('protocol split protection waiting for more input.');
 			buff = t;
 			//log(buff);
-			return '';
+			return;
 		}
 
 		if (Config.mxp.enabled()) {
 		
 			var mxp = t.match(/\x1b\[[1-7]z/g);
 			
-			if (mxp && (mxp.length % 2)) {
+			if (mxp && (mxp.length % 2) && !force) {
 				console.log('mxp split protection waiting for more input: ' + mxp.length);
 				console.log(t);
 				buff = t;
 				//log(buff);
-				return '';
+				return;
+				//return setTimeout(process, 500, 1);
 			}
 		}
 		
-		if (t.match(/\x1b\[[^mz]+$/)) {
+		if (t.match(/\x1b\[[^mz]+$/) && !force) {
 			log('ansi split protection is waiting for more input.');
 			buff = t;
-			return '';
+			return setTimeout(process, 500, 1);
 		}
 		
-		if (t.match(/<dest/i)) {
+		if (t.match(/<dest/i) && !force) {
 			if (!t.match(/<\/dest/i)
 				|| (t.match(/<dest/gi).length != t.match(/<\/dest/gi).length)
 			) {
 				buff = t;
-				return '';
+				return;
 			}
 		}
-
+		
+		if (!t.has('portal.chatlog'))
+			log(t);
+		
 		t = Event.fire('before_process', t);
 
-		/* msdp */
-		
 		if (t.has('\xff\xfb\x45')) { /*IAC WILL MSDP */
 			console.log('Got IAC WILL MSDP');
 			Event.fire('will_msdp', self);
@@ -365,11 +368,6 @@ var Socket = function(o) {
 
 		if (t.has('\xff\xfb\x5b') && Config.base64)
 			ws.send('\xff\xfd\x5b');
-		
-		t = t.replace(/([^\x1b])</g,'$1&lt;');
-		t = t.replace(/([^\x1b])>/g,'$1&gt;');
-		t = t.replace(/\x1b>/g,'>');
-		t = t.replace(/\x1b</g,'<');
 
 		if (t.has('\xff\xfb\x01')) {
 			
@@ -403,6 +401,11 @@ var Socket = function(o) {
 
 		if (t.has('\x07'))
 			new Audio('/app/sound/ding.mp3').play();
+		
+		t = t.replace(/([^\x1b])</g,'$1&lt;');
+		t = t.replace(/([^\x1b])>/g,'$1&gt;');
+		t = t.replace(/\x1b>/g,'>');
+		t = t.replace(/\x1b</g,'<');
 		
 		t = Event.fire('before_html', t, self);
 		t = t.replace(/([^"'])(http.*:\/\/[^\s\x1b"']+)/g,'$1<a href="$2" target="_blank">$2</a>');
@@ -453,6 +456,9 @@ var Socket = function(o) {
 			ws.onclose = function () {};
 			ws.close();
 		}
+		
+		buff = '';
+		Config.mxp.disable();
 		
 		connect();
 	};

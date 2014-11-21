@@ -20,6 +20,7 @@ var iFrame = function(o) {
 		win = new Window({
 			id: o.id,
 			title: o.title,
+			iframe: 1,
 			closeable: 1,
 			'class': 'nofade',
 			css: o.css,

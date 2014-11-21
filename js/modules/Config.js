@@ -10,13 +10,13 @@ var Config = {
 	
 	profile: param('profile'),
 	
-	width: param('width')||860,
+	width: param('width') || 860,
 			
-	height: param('height')||540,
+	height: param('height') || j(window).height() - 80,
 	
-	top: param('top')||80,
+	top: param('top') || 0,
 
-	left: param('left') || 240,
+	left: param('left') || 0,
 	
 	clean: window.location.search.has('clean') || 0,
 	

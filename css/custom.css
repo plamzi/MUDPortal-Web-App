@@ -1,0 +1,250 @@
+/* Copyright (C) YOOtheme GmbH, YOOtheme Proprietary Use License (http://www.yootheme.com/license) */
+
+@import url(../../../css/custom.css);
+
+/*
+ * Custom Style Sheet - Use this file to style your content
+ */
+
+.pos-title, .pos-title a, .pos-related, #yoo-zoo h3, #yoo-zoo legend, #yoo-zoo .headline, #yoo-zoo h1 { 
+	color: #ccc !important;
+}
+
+a.button-default:hover, a.button-primary:hover {
+	cursor: pointer !important;
+}
+
+#yoo-zoo .pos-content ul li:before {
+	content: "\f111";
+    font-family: "FontAwesome";    
+    color: inherit;
+    font-size: 10px;
+    font-style: normal;
+    font-weight: normal;
+    text-decoration: inherit;
+    position: relative;
+    left: 2px;
+    top: -2px;
+    padding-right: 10px;
+}
+
+#yoo-zoo .details div.heading {
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 3px;
+}
+
+#headerbar {
+    margin-bottom: 8px;
+}
+
+#logo h2 {
+    margin: 0px 0 8px;
+}
+
+td.kmessage-right, td.kmessage-left, #Kunena textarea, .fual_row0  {
+	background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+.fual_row1 {
+	background-color: transparent;
+}
+
+#Kunena textarea {
+	font-size: 14px;
+}
+
+div.kmsgtext-quote {
+    background: none no-repeat scroll 0 0 rgba(0, 0, 0, 0.4) !important;
+    border: 1px dashed rgba(255, 255, 255, 0.25) !important;
+    border-radius: 3px 3px 3px 3px !important;
+    color: #aaa !important;
+}
+
+.krow2 {
+	background: none repeat scroll 0 0 rgba(255, 235, 158, 0.1) !important;
+}
+
+.menu-dropdown .dropdown-bg > div, .searchbox .results {
+    background: none repeat-x scroll 50% 0 #1f2c34 !important;
+}
+
+.kbutton, form .button, .app .button {
+	font-family: "OpenSansLight",Arial,Helvetica,sans-serif !important;
+    font-size: 14px !important;
+    font-weight: normal !important;
+	border: medium none !important;
+    border-radius: 2px 2px 2px 2px !important;
+    padding: 6px 12px !important;
+    background: url("../../../images/tools/button_default.png") repeat-x scroll 50% 0 transparent !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.6);
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+    color: #8A8C8C;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.5);
+}
+
+.kbutton:before, form .button:before {
+    background-image: url("../../../images/tools/button_default_effect.png") !important;
+}
+
+.kbutton:hover, form .button:hover {
+    animation-duration: 300ms;
+    animation-fill-mode: both;
+    animation-name: bounce;
+    color: #CCC;
+}
+
+.alratings_container {
+	position: relative;
+	top: -12px;
+}
+
+article .title {
+	font-size: 28px;
+}
+
+#login-form .userdata, #form-login-remember {
+	margin: 0;
+}
+
+#login-form .inputbox, .kprofileboxcnt .inputbox, 
+#registrationTable .inputbox, li.cbMenu, 
+#table_frontend_user_article_list .inputbox, 
+#control-panel inputbox {
+    background-color: rgba(0, 0, 0, 0.2) !important;
+    background-position: 0 50% !important;
+    background-repeat: no-repeat !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 2px 2px 2px 2px !important;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2) inset !important;
+    margin: 0;
+    padding: 0;
+    height: 24px !important;
+}
+
+.contentpane textarea {
+	background-color: rgba(0, 0, 0, 0.2) !important;
+    background-position: 0 50% !important;
+    background-repeat: no-repeat !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 2px 2px 2px 2px !important;
+}
+
+.cbSSmenu li {
+	background: none repeat scroll 0 0 rgba(0, 0, 0, 0.2) !important;
+}
+
+li.cbMenu, li.cbMenuLeaf2 {
+	vertical-align: middle;
+}
+
+.tab-page {
+	background-color: rgba(0, 0, 0, 0.2) !important;
+}
+
+#form-login-remember {
+	position: relative !important;
+	left: 20px !important;
+}
+
+#form-login-remember input[type="checkbox"] {
+	position: relative !important;
+	top: -26px !important;
+	left: -22px !important;
+}
+
+.cbLoginButtonSpan {
+	clear: both;
+}
+
+#cb_cb_comp_login .componentheading {
+	font-size: 22px;
+}
+
+.teaser-item .pos-title a {
+	font-size: 28px;
+}
+
+.teaser-item .pos-links, .kpost-smallicons {
+	display: none !important;
+}
+
+#registrationTable .contentpaneopen {
+	display: none;
+}
+
+.cb_template_default .componentheading {
+	font-size: 28px;
+	padding-bottom: 12px;
+}
+
+#registrationTable {
+	margin: 12px 0px 12px 0px !important;
+}
+
+.left {
+	float: left;
+}
+
+.right {
+	float: right;
+}
+
+#content {
+    background: none repeat scroll 0 0 transparent !important;
+}
+
+.chzn-container {
+	color: #444;
+}
+
+#yoo-zoo .details h1.title {
+    color: #323232;
+    font-size: 44px;
+}
+
+#table_frontend_user_article_list {
+	border: none !important;
+}
+
+.kpostbuttons {
+	background-color: white;
+}
+
+input[type="radio"], input[type="checkbox"] {
+    line-height: normal;
+    margin: -2px 5px 0;
+}
+
+sup {
+    top: 8px !important;
+    font-size: 9px !important;
+}
+
+.klatest-items .knewchar {
+    color: #8BB366;
+    font-family: OpenSans,Arial,Helvetica,sans-serif;
+}
+
+.article-js {
+	width: 100%;
+	height: 500px;
+	overflow: hidden;
+}
+
+textarea {
+	background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+#Kunena .kmsgbody td {
+	min-width: 12%;
+	padding-bottom: 12px;
+}
+
+#Kunena .kmsgbody tr {
+	border: 1px solid #cccccc;
+	border-spacing: 1px;
+}
+
+.fb_iframe_widget {
+    margin-right: 4px;
+}

@@ -6,12 +6,18 @@
 
 var MXP = function () {
 	
-	var mxp = 0, elements = [];
+	var mxp = 0, elements = [], entities = [];
 	
 	var prep = function(t) {
-		t = new Colorize().process(t)
+	
+		t = new Colorize()
+			.process(t)
 			.replace(/\x1b\[[1-7]z/g, '')
 			.replace(/\n/g,'<br>');
+			
+		t = t.replace(/\x1b>/g,'>');
+		t = t.replace(/\x1b</g,'<');
+		
 		return t;
 	};
 
@@ -20,28 +26,82 @@ var MXP = function () {
 		if (t.has('\xff\xfa\x5b\xff\xf0')) {
 			log('Got IAC SB MXP IAC SE -> BEGIN MXP');
 			t = t.replace(/.\xff\xfa\x5b\xff\xf0/, '');
-			j('body').append('<div id="mxpf" style="display: none"></div>');
-			mxp = 1;
+			if (!mxp) {
+				j('body').append('<div id="mxpf" style="display: none"></div>');
+				mxp = 1;
+			}
 		}
 
-		if (!mxp)
-			return t;
-		
-		t = t.replace(/\r/g,'');
-		
-		if (t.match(/!element/i)) {
-			var m = t.match(/<!element ([^]+?)>/gi);
-			if (m && m.length) {
-				for (var i = 1; i < m.length; i++)
-					elements.push(m[i].substring(10, m[i].length-1).split(' '));
+		if (t.has('\xff\xfb\x5b')) {
+			console.log('Got IAC WILL MXP -> BEGIN MXP');
+			t = t.replace(/.\xff\xfb\x5b/, '');
+			if (!mxp) {
+				j('body').append('<div id="mxpf" style="display: none"></div>');
+				mxp = 1;
 			}
-			log(elements);
-			t = t.replace(/<!element[^]+>/gi, '');
 		}
+		
+		if (!mxp && !t.match(/\x1b\[[0-7]z/))
+			return t;
+
+		t = t.replace(/\r/g,'');
 		
 		if (t.has('<VERSION>'))
 			t = t.replace('\x1b[1z<VERSION>\x1b[7z', '');
+		
+		if (t.match(/!element/i)) {
+			
+			var m = t.match(/<!element ([^]+?)>/gi);
+			
+			if (m && m.length) {
 				
+				elements = [];
+				
+				for (var i = 1; i < m.length; i++) {
+
+					var e = m[i].substring(10, m[i].length-1).split(' ');
+
+					if (e[1] == 'FLAG=""') {
+						e[2] = new RegExp('<('+e[0]+')>([^]+)<\/'+e[0]+'>', 'gi');
+						e[3] = '\x1b<a class="mxp" href="$1 $2"\x1b>$2\x1b</a\x1b>';
+					}
+					else {
+						e[2] = new RegExp('<(|\/)'+e[0]+'>', 'gi');
+						e[3] = '';
+					}
+					
+					elements.push(e);
+				}
+				
+				console.log(elements);
+				Event.fire('mxp_elements', elements);
+				t = t.replace(/<!element[^]+>/gi, '');
+			}
+		}
+		
+		if (t.match(/!entity/i)) {
+			
+			var m = t.match(/<!entity ([^]+?)>/gi);
+			
+			if (m && m.length) {
+				
+				entities = [];
+				
+				for (var i = 1; i < m.length; i++)
+					entities.push(m[i].substring(9, m[i].length-1).split(' '));
+				
+				for (var i = 0; i < entities.length; i++)
+					Event.fire('mxp_entity', entities[i]);
+				
+				t = t.replace(/<!entity[^]+>/gi, '');
+				log(entities);
+			}
+		}
+				
+		/* declared elements */
+		for (var i = 0; i < elements.length; i++)
+			t = t.replace(elements[i][2], elements[i][3]);
+		
 		/* <color> tag */
 		t = t.replace(/\x1b\[[1-7]z<color(.+?)>([^]+?)<\/color>\x1b\[[1-7]z/gi, '\x1b<span style="color: $1"\x1b>$2\x1b<\/span\x1b>');
 		
@@ -54,10 +114,10 @@ var MXP = function () {
 		t = t.replace(/(<send )("[^]+?)>/gi, '$1 href=$2>');
 		
 		/* <send> simple & single-choice tag: turn into links, escape &lt, &gt */
-		t = t.replace(/<send(|[^]+?)>([^]+?)<\/send>/gi, '\x1b<a class="mxp tip"$1\x1b>$2\x1b<\/a\x1b>');
+		t = t.replace(/<send(|[^>]+)>(.+?)<\/send>/gi, '\x1b<a class="mxp tip"$1\x1b>$2\x1b<\/a\x1b>');
 		
 		t = t.replace(/hint=/gi, 'title=');
-		
+
 		/* <font> support */
 		t = t.replace(/\x1b\[[1-7]z<font([^]+?)>\x1b\[[1-7]z/gi, '\x1b<font style="$1>');
 			t = t.replace(/<font([^]+?)color=([^ >]+)/gi, '<font$1color:$2;');
@@ -72,34 +132,24 @@ var MXP = function () {
 		/* <image> support */
 		t = t.replace(/\x1b\[[1-7]z<image ([^]+?) url="([^]+?)">\x1b\[[1-7]z/gi, '\x1b<img src="$2$1"\x1b>');
 		t = t.replace(/\x1b\[[1-7]z<image([^]+?)url="([^]+?)">\x1b\[[1-7]z/gi, '\x1b<img$1src="$2"\x1b>');
-		
-		/* open tags */
-		t = t.replace(/<([\/BRIUS]{1,3})>/gi, '\x1b<$1\x1b>');
 
 		//if (Config.debug)
 			//t += '<buy>bread</buy>';
-		
-		/* declared elements */
-		for (var i = 0; i < elements.length; i++) {
-			if (elements[i][1] == 'FLAG=""') {
-				var re = new RegExp('<('+elements[i][0]+')>([^]+)<\/'+elements[i][0]+'>', 'g');
-				t = t.replace(re, '\x1b<a class="mxp" href="$1 $2"\x1b>$2\x1b</a\x1b>');
-			}
-			else {
-				var re = new RegExp('<(|\/)'+elements[i][0]+'>', 'g');
-				t = t.replace(re, '');
-			}
-		}
-		
-		//log('post-MXP: '+t);
+		//if (Config.debug)
+			//t += '<BR><BR>';
+		/* open tags */
+		t = t.replace(/<([\/BRIUS]{1,3})>/gi, '\x1b<$1\x1b>');
+
 		if (t.match(/\x1b\[[1-7]z<frame/i)) {
 		
 			j('#mxpf').html(
+				prep(
 				t
 				.replace(/<frame (.+?) (open)/gi, '<span class="iframe" $1 open="1"')
 				.replace(/<frame (.+?) (eof)/gi, '<span class="iframe" $1 eof="1"')
 				.replace(/<frame (.+?) (close)/gi, '<span class="iframe" $1 close="1"')
 				.replace(/<frame/gi, '<span class="iframe"')
+				)
 			);
 			
 			j('#mxpf .iframe').each(function() {
@@ -124,10 +174,10 @@ var MXP = function () {
 					open = 1;
 				
 				var css = {
-					width: j(this).attr('width') || 300,
-					height: j(this).attr('height') || 280,
-					left: j(this).attr('left') || (j(window).width() - 300),
-					top: j(this).attr('top') || 20
+					width: j(this).attr('width') || null,
+					height: j(this).attr('height') || null,
+					left: j(this).attr('left') || null,
+					top: j(this).attr('top') || null
 				};
 				
 				if (align && align.length) {
@@ -141,18 +191,41 @@ var MXP = function () {
 						css.right = 0;
 				};
 				
-				if (window[n]) {
+				if (css.width || css.height || css.left || css.top)
+					css.pos = 1;
+				else
+					css = null;
+				
+				if (window[n] || j('.' + n).length) {
 					if (close)
 						j('.' + n).remove();
 					else
-					if (eof)
-						j('.' + n).empty();
-					else
-					if (j('.' + n).length)
-						j('.' + n +' .content').empty();
+					if (eof || j('.' + n).length) {
+						if (j('.' + n + ' .out').length) /* need a better way to empty different elements */
+							j('.' + n + ' .out').empty();
+						else
+							j('.' + n + ' .content').empty();
+					}
 					else 
-					if (action == 'open')
-						Config[n] = new window[n];
+					if (action == 'open') {
+						try {
+							Config[n] = new window[n];
+						}
+						catch(ex) {
+							console.log('New MXP window: ' + n);
+							Config[n] = new Window({ 
+								id: '#' + n, 
+								title: n, 
+								'class': n + ' nofade',
+								css: (css.pos || (align && align.length) ) ? css : null
+							});
+							
+							j('#' + n + ' .content').addClass('nice').niceScroll({
+								cursorwidth: 7,
+								cursorborder: 'none'
+							});
+						}
+					}
 				}
 				else
 				if (p && Config[p]) {
@@ -161,10 +234,7 @@ var MXP = function () {
 						j('a[href="#tab-'+n+'"]').remove;
 					}
 					else
-					if (eof)
-						j('.tab-' + n).empty();
-					else
-					if (j('.tab-' + n).length)
+					if (eof || j('.tab-' + n).length)
 						j('.tab-' + n).empty();
 					else 
 					if (action == 'open')
@@ -174,7 +244,9 @@ var MXP = function () {
 						});
 				}
 				else if (!p && action == 'open') {
+					
 					console.log('New MXP window: ' + n);
+					
 					Config[n] = new Window({ 
 						id: '#' + n, 
 						title: n, 
@@ -182,8 +254,7 @@ var MXP = function () {
 						css: css
 					});
 					
-					j('#' + n + ' .content')
-					.addClass('nice').niceScroll({
+					j('#' + n + ' .content').addClass('nice').niceScroll({
 						cursorwidth: 7,
 						cursorborder: 'none'
 					});
@@ -199,18 +270,21 @@ var MXP = function () {
 		if (t.match(/\x1b\[[1-7]z<dest/i)) {
 		
 			j('#mxpf').html(
+				prep(
 				t
-				.replace(/\x1b\[[1-7]z<dest ([A-Za-z]+)/gi, '<div class="dist" name="$1"')
+				.replace(/\n/g,'<br>')
+				.replace(/\x1b\[[1-7]z<dest ([^>]+)/gi, '<div class="dest" name="$1"')
 				.replace(/\x1b\[[1-7]z<\/dest>/gi, '</div>')
+				)
 			);
 			
-			j('#mxpf .dist').each(function() {
+			j('#mxpf .dest').each(function() {
 
 				var x = j(this).attr('x');
 				var y = j(this).attr('y');
 				var n = j(this).attr('name');
 				
-				var msg = prep(j(this).html());
+				var msg = j(this).html();
 
 				if (x || y)
 					msg = '<span style="position: absolute; top: ' + (y || 0) + '; left: ' + (x || 0) + '">' + msg + '</span>';
@@ -225,17 +299,39 @@ var MXP = function () {
 				}
 				else
 				if (j('#' + n).length) {
+				
+					if (n == 'scroll-view') {
+						Config.ScrollView.add(msg);
+						return j('#' + n).get(0).win.front();
+					}
+					
 					var my = j('#' + n + ' .content');
 					my.append(msg).scrollTop(my.prop('scrollHeight'));
 					j('#' + n).get(0).win.resize();
 				}
-				
+				else
+				if (n == 'Modal') {
+					msg = msg.split('<br>');
+					var title = msg.shift();
+					msg.shift();
+					new Modal({
+						title: title,
+						text: msg.join('<br>'),
+						replace: true
+					});
+				}
+				else
+				if (Config.ScrollView)
+					Config.ScrollView.add(msg);
 			});
 			
 			t = t.replace(/(\x1b\[[1-7]z<dest[\s\S]*\/dest>)/gi, '');
 		}
 		
+		t = t.replace(/\x1b\[[1-7]z<[^\x1b>]+>/g, '');  /* strip any unsupported tags */
+		t = t.replace(/<[^\x1b>]+?>\x1b\[[1-7]z/g, '');
 		t = t.replace(/\x1b\[[1-7]z/g, ''); /* strip any remaining enclosures, for now */
+		
 		return t;
 	};
 	
@@ -271,24 +367,28 @@ var MXP = function () {
 
 		j('.mxp-dropdown').remove();
 		//console.log('mxp click');
-		var href;
+		var href = j(this).attr('href');
 		
-		if ((href = j(this).attr('href'))) {
-			
+		if (href) {
 			 if (href.has('|'))
 				multi(href, this);
 			 else
 				Config.socket.write(href);
 		}
 		else
-			Config.socket.write(j(this).text());
+			Config.socket.write('');
 		
 		return false;
 	});
 	
 	return {
 		process: process,
-		enabled: function() { return mxp; }
+		enabled: function() { 
+			return mxp; 
+		},
+		disable: function() {
+			mxp = 0;
+		}
 	};
 };
 

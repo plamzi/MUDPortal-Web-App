@@ -3,6 +3,9 @@ var Window = function(o) {
 	var id, h, position, width, height, maximized, opt, was_at;
 	var minZ = 100;
 	var view_id = Config.view;
+	var drag = ( !Config.device.mobile && !param('kong') && !param('gui') && !param('embed') && !o.nodrag && !Config.nodrag );
+	var doresize = ( !o.noresize && !param('embed') );
+	var save = ( window.user && user.id && Config.host && !param('kong') && !param('gui') && !param('embed') );
 	
 	o = o || {
 		id: '#scroll-view',
@@ -20,7 +23,7 @@ var Window = function(o) {
 		o.handle = '.none';
 	
 	var button = function(o) {
-		j(id + ' .toolbar').append('<i class="icon '+o.icon+' tip" title="'+o.title+'"></i>');
+		j(id + ' .toolbar').prepend('<i class="icon '+o.icon+' tip" title="'+o.title+'"></i>');
 		j(id + ' .'+o.icon).click(o.click); 
 	}
 	
@@ -41,8 +44,8 @@ var Window = function(o) {
 			h -= 18;
 		
 		j(id + ' .content').height(h);
-		j(id + ' .tab-content').height(h - 30);
-		j(id + ' .tab-pane').height(h - 30);
+		j(id + ' .tab-content').height(h - 40);
+		j(id + ' .tab-pane').height(h - 40);
 		
 		renice();	
 	}
@@ -57,9 +60,9 @@ var Window = function(o) {
 		
 		id = o.id;
 		
-		log('Window.init: '+id);
+		log('Window.init: ' + id);
 		
-		var cleanID = o.id.split('#')[1];
+		var cleanID = id.split('#')[1];
 		
 		j('.app').prepend('\
 			<div id="'+cleanID+'" class="window '+(o['class']||'')+'" >\
@@ -67,10 +70,11 @@ var Window = function(o) {
 			</div>\
 		');
 		
-		if (!o.handle) {
+		if (!o.handle && !o.transparent) {
 			j(o.id).prepend('\
-			<div class="handle toolbar">\
-			<div class="title" style="width: 100%; text-align: center; text-overflow: ellipsis;">'+(o.title||'&nbsp;')+'</div>\
+			<div class="handle">\
+					<div class="title" style="width: 100%; text-align: center; text-overflow: ellipsis;">'+(o.title||'&nbsp;')+'</div>\
+					<div class="toolbar"></div>\
 			</div>');
 			o.handle = '.handle';
 		}
@@ -80,7 +84,6 @@ var Window = function(o) {
 		title(o.title||'');
 
 		if (o.transparent) {
-			j(id + ' .toolbar').remove();
 			j(id + ' .content').css({
 				'background-color': 'transparent',
 				top: 0
@@ -125,8 +128,7 @@ var Window = function(o) {
 		
 		j(id).click(front);
 		
-		if (!Config.device.mobile && !param('kong') && !param('gui') && !o.nodrag && !Config.nodrag)
-			draggable();
+		draggable();
 
 		j(id + ' .handle').dblclick(hide);
 		
@@ -134,17 +136,15 @@ var Window = function(o) {
 			'overflow':'hidden',
 		});
 		
-		if (!o.noresize) {
+		if (doresize) {
 			j(id).resizable({
 				minWidth: 60,
 				width: 300,
 				handles: 'all',
-				stop: function(e, u) { 	
+				stop: function(e, u) {
 					resize();
-					
-					if (o.onResize)
-						o.onResize();
-					
+						if (o.onResize)
+							o.onResize();
 					savepos();
 				}
 			});
@@ -185,13 +185,16 @@ var Window = function(o) {
 		try {
 			j(id).draggable('destroy');
 		} catch(ex) {}
-		
+	
+		if (!drag)
+			return;
+			
 		j(id).draggable({
 			/*stack: ".ui-group",*/
 			handle: o.handle,
 			snap: 1,
 			//containment: "window",
-			//iFrameFix: true,
+			iFrameFix: o.iframe ? 1 : 0,
 			start: function(e, u) {
 				was_at = u.position;
 				j(this).css({ bottom: '', right: '' });
@@ -269,9 +272,11 @@ var Window = function(o) {
 		if (j(id).hasClass('nofront'))
 			return;
 	
-		if (Config.front == id)
+		if (Config.front == id) {
+			Event.fire('window_front', id);
 			return;
-
+		}
+		
 		log('Window.front: ' + id);
 
 		j(id).css('opacity', 1);
@@ -315,7 +320,7 @@ var Window = function(o) {
 	
 	var savepos = function() {
 		
-		if (!user.id || !Config.host || param('kong') || param('gui'))
+		if (!save)
 			return;
 			
 		if (!user.pref.win)
@@ -365,7 +370,7 @@ var Window = function(o) {
 	
 	var getpos = function(o) {
 
-		if (!user.id || !user.pref || !user.pref.win || !Config.host || param('kong') || param('gui'))
+		if (!save || !user.id || !user.pref || !user.pref.win)
 			return 1;
 		
 		log('Restoring saved position:  '+ o.id);
@@ -385,6 +390,7 @@ var Window = function(o) {
 
 		if (!prefs[view_id] || !prefs[view_id][o.id]) {
 			log('no stored position for ' + o.id);
+			
 			log(prefs);
 			return 1;
 		}
@@ -413,6 +419,8 @@ var Window = function(o) {
 		o.css.height = pref.height||o.css.height;
 		
 		o.css.zIndex = pref.zIndex||o.css.zIndex;
+		
+		delete o.css.right, delete o.css.bottom;
 		
 		if (pref.collapsed)
 			collapse();

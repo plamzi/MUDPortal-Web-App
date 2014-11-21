@@ -1,6 +1,10 @@
 var MistyBars = function(o) {
     
-    var cv, cs, cm, win, id = "#bar-window", o = o || {};
+    var cv, cs, cm, win, id = "#bar-window";
+    
+    var o = o || {
+    	title: 'MistyBars'
+    };
     
     var process = function(d) {
 		
@@ -40,11 +44,11 @@ var MistyBars = function(o) {
             'class': 'bar-window nofade',
             transparent: 1,
             noresize: 1,
-            css: o.css || {
+            css: {
                 height: 130,
                 width: 360,
 		        top: j(window).height() - 140,
-		        left: j(window).width() - 380
+		        left: Config.width + 30
             }
         });
         

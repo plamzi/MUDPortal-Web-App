@@ -1,5 +1,8 @@
 var ControlPanel = function () {
 	
+	if (!window.user)
+		return;
+		
 	var self = this;
 	
 	var id = '#control-panel';
@@ -624,7 +627,7 @@ var ControlPanel = function () {
 	Event.listen('chat_data', function(d, c) {
 
 		//dump(c);
-		dump(d);
+		//dump(d);
 		
 		var key = d.match(/([^ ]+?) /)[1];
 		var value = d.match(/[^ ]+? (.*)/)[1];

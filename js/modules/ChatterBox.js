@@ -8,16 +8,18 @@
 */
 
 var ChatterBox = function(o) {
-			
+
 	var self = this;
 	
 	o = o || {
 		id: '#chat-window',
 		title: 'ChatterBox',
-		width: 360,
-		height: 360,
-		top: 0,
-		right: 360,
+		css: {
+			width: 400,
+			height: 400,
+			top: 0,
+			left: Config.width
+		},
 		tabs: []
 	};
 

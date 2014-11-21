@@ -68,7 +68,7 @@ var TriggerHappy = function(o) {
 		}
 		
 		Config.socket.echo('Loaded ' + triggers.length + '/' + (gTriggers.length + pTriggers.length) + ' triggers.');
-	}
+	};
 	
 	var respond = function(msg) {
 
@@ -93,12 +93,12 @@ var TriggerHappy = function(o) {
 		}
 		
 		return msg;
-	}
+	};
 	
 	init();
 	
 	return {
 		init: init,
 		respond: respond
-	}
-}
+	};
+};

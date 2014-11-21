@@ -4,8 +4,15 @@ var ScrollView = function(o) {
 	var cmds = [], cmdi = 0, echo = 1;
 	var keepcom = (Config.getSetting('keepcom') == null || Config.getSetting('keepcom') == 1);
 
-	var o = o||{
-		scrollback: 20 * 1000
+	var o = o || {
+		css: {
+			width: Config.width,
+			height: Config.height,
+			top: Config.top,
+			left: Config.left
+		},
+		local: 1, /* local echo */
+		scrollback: 30 * 1000
 	};
 
 	var id = '#scroll-view';
@@ -16,7 +23,7 @@ var ScrollView = function(o) {
 	var win = new Window({
 		id: id,
 		css: o.css,
-		'class': 'nofade',
+		'class': 'scroll-view nofade',
 		max: 1,
 		master: !Config.notrack,
 		closeable: Config.ControlPanel
@@ -176,20 +183,22 @@ var ScrollView = function(o) {
 		
 		j(id).on('click', '.multiline', multi);
 		
-		j(id + ' .send').autocomplete({
-			appendTo: "body",
-			minLength: 2,
-		    source: function(request, response) {
-		    	var c = cmds.filter(function (v, i, a) { return a.indexOf (v) == i }); 
-		        var results = j.ui.autocomplete.filter(c, request.term);
-		        response(results.slice(0, 5));
-		    }
-		});
+		if (!Config.embed)
+			j(id + ' .send').autocomplete({
+				appendTo: "body",
+				minLength: 2,
+				source: function(request, response) {
+					var c = cmds.filter(function (v, i, a) { return a.indexOf (v) == i }); 
+					var results = j.ui.autocomplete.filter(c, request.term);
+					response(results.slice(0, 5));
+				}
+			});
 	}
 	
 	j(id + ' .out').niceScroll({ 
 		cursorwidth: 7,
-		cursorborder: 'none'
+		cursorborder: 'none',
+		railoffset: { top: -2, left: -2 }
 	});
 	
 	j(document).on('mouseup', '.out, .freeze', function() {
@@ -253,7 +262,6 @@ var ScrollView = function(o) {
 		});
 		
 		j(id + ' .send').focus();
-		
 		setInterval(scroll, 2000);
 	}
 	else {
@@ -309,8 +317,10 @@ var ScrollView = function(o) {
     Event.listen('internal_colorize', new Colorize().process);
     
     Event.listen('after_display', function(m) {
-    	sesslog += m.replace(/<br>/gi, '\n').replace(/<.+?>/gm, ''); 
-    	return m 
+		try {
+			sesslog += m.replace(/<br>/gi, '\n').replace(/<.+?>/gm, ''); 
+		} catch(ex) { log('ScrollView.after_display ', ex); }
+    	return m;
     });
     
 	var add = function(A) {
@@ -318,8 +328,11 @@ var ScrollView = function(o) {
 		var my = j(id + ' .out');
 		
 		if (my[0].scrollHeight > o.scrollback) {
-			j(id + ' .out').children().slice(0,100).remove();
+		
+			j(id + ' .out').children().slice(0, 100).remove();
+			
 			var t = j(id + ' .out').html(), i = t.indexOf('<span');
+			
 			j(id + ' .out').html(t.slice(i));
 		}
 		
@@ -328,6 +341,8 @@ var ScrollView = function(o) {
 		
 		if (j(id + ' .freeze').length)
 			j(id + ' .freeze').append('<span>'+A+'</span>');
+			
+		Event.fire('scrollview_add', A, self);
 	}
 	
 	var scroll = function() {
@@ -376,7 +391,7 @@ var ScrollView = function(o) {
 		out: self
 	});
 	
-	if (user && user.id) {
+	if (window.user && user.id) {
 	
 		Config.MacroPane = new MacroPane({
 			socket: ws

@@ -1,10 +1,20 @@
 
 var Modal = function(o) {
 	
-	j('.modal').modal('hide').remove();
+	o.backdrop = o.backdrop || 0;
+	
+	if (o.replace) {
+		if (j('.modal').length && j('.modal').is(':visible')) {
+			j('.modal h3').html(o.title);
+			j('.modal .modal-body p').html(o.text || o.html);
+			return;
+		}
+	}
+	else
+		j('.modal').modal('hide').remove();
 	
 	j('body').append('\
-		<div class="modal fade"><div class="modal-dialog"><div class="modal-content">\
+		<div class="modal '+(o['class'] || '')+' fade"><div class="modal-dialog"><div class="modal-content">\
 			<div class="modal-header">\
 				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>\
 				<h3></h3>\
@@ -21,8 +31,8 @@ var Modal = function(o) {
 	if (o.title)
 		j('.modal h3').html(o.title);
 	
-	if (o.text)
-		j('.modal .modal-body p').html(o.text);
+	if (o.text || o.html)
+		j('.modal-body p').html(o.text || o.html);
 
 	if (o.closeText)
 		j('.modal .dismiss').html(o.closeText);
@@ -32,7 +42,7 @@ var Modal = function(o) {
 	
 	if (o.css) {
 		if (o.css.width)
-			o.css['margin-left'] = -(o.css.width/2); 
+			o.css['margin-left'] = -(o.css.width / 2); 
 		j('.modal').css(o.css);
 	}
 	
@@ -49,3 +59,12 @@ var Modal = function(o) {
 	
 	j('.modal').modal(o);
 }
+
+j('body').on('shown.bs.modal', function() {
+	j('.modal .modal-body').niceScroll({ cursorborder: 'none', cursorwidth: 7 });
+});
+
+j('body').on('hide.bs.modal', function() {
+	try { j('.modal .modal-body').niceScroll('destroy'); } catch(ex) {};
+	j('.modal').remove();
+});

@@ -8,8 +8,8 @@ var JujuMapper = function(o) {
 		css: {
 			width: 400, 
 			height: 400, 
-			top: 40, 
-			left: j(window).width()-400 
+			top: 400, 
+			right: j(window).width()-400 
 		}
 	};
 	
@@ -37,7 +37,7 @@ var JujuMapper = function(o) {
     	sw:  -dist,
     	u:	+Math.floor(dist/3),
     	d:  -Math.floor(dist/3)
-    }
+    };
     
     var yOffset = {
     	n:	 -dist,
@@ -50,7 +50,7 @@ var JujuMapper = function(o) {
     	sw:  +dist,
     	u: -Math.floor(dist/3),
     	d: +Math.floor(dist/3)
-    }
+    };
 	
 	var rev = {
 	    n: 's',
@@ -63,7 +63,7 @@ var JujuMapper = function(o) {
 	    nw: 'se',
 	    se: 'nw',
 	    sw: 'ne'
-	}
+	};
 	
 	var colors = [
 		'Gold',
@@ -257,11 +257,11 @@ var JujuMapper = function(o) {
 		j.post(o.saveURL, { data: map }, function(d) {
 			j(id + ' .icon-spinner').replaceWith('<i class="icon icon-save save" title="Save the latest map data."></i>');
 		});
-	}
+	};
 	
 	var editing = function() {
 	    return (j(id + ' .icon-edit').hasClass("on"))
-	}
+	};
 	
 	var seeall = function() {
 		if (!editing())
@@ -269,27 +269,27 @@ var JujuMapper = function(o) {
 		if (o.seeall)
 			return 1;
 	    return (j(id + ' .reveal').hasClass("on"))
-	}
+	};
 	
 	var settings = function() {
 	 
-	}
+	};
 	
 	var escape = function(d) {
 		if (!exists(d))
 			return 'unknown';
 		return (d.replace(/[ ,;'"\/\\\(\)&]/g, ''));
-	}
+	};
 	
 	var flatExits = function(r) {
 		return d3.entries(r.exits).filter(function(d) {
 			return (d.key != 'd' && d.key != 'u')
 		}).length;
-	}
+	};
 	
 	var noexit = function(r) {
 		return (!r.exits || j.isEmptyObject(r.exits))
-	}
+	};
 	
 	var exitType = function(d) {
 		
@@ -312,7 +312,7 @@ var JujuMapper = function(o) {
 			return 'jump';
 		
 		return 'normal';
-	}
+	};
 	
  	var init = function() {
 
@@ -407,7 +407,7 @@ var JujuMapper = function(o) {
 		
 		if (at)
 			go(at);
-	}
+	};
 	
  	var genRooms = function() {
  		
@@ -477,7 +477,7 @@ var JujuMapper = function(o) {
  		});
  		if (Config.debug)
  			log("Mapper.genRooms: " + R.length);
- 	}
+ 	};
  	
 	var genExits = function() {
 
@@ -522,7 +522,7 @@ var JujuMapper = function(o) {
     			//log('added exit:\n'+ stringify(d));
     		}
 		}
-	}
+	};
 	
 	var drawExit = function(d) {
 		
@@ -553,7 +553,7 @@ var JujuMapper = function(o) {
     		return null;
     	else
     		return d3.svg.line().interpolate("linear")([[d.from.x, d.from.y], [d.to.x, d.to.y]])
-	}
+	};
 	
 	var render = function(cb) {
 
@@ -565,6 +565,10 @@ var JujuMapper = function(o) {
  		
         log('Mapper.render @' + at.num);
 
+		W = j(o.container).width(), H = j(o.container).height();
+		
+		log('W ' + W + ' H ' + H);
+		
         var see = seeall();
         
         selection = [];
@@ -584,10 +588,10 @@ var JujuMapper = function(o) {
 		svg.selectAll(".room, .line, .tag").remove();
         
         lns = c_lines.selectAll(".line")
-            .data(exits, function(d) { return "line_" + (d.from.num + '-' + d.to.num) })
+            .data(exits, function(d) { return "line_" + (d.from.num + '-' + d.to.num); })
             .enter()
             .append("svg:path")
-            .attr("id", function(d) { return "line_" + (d.from.num + '-' + d.to.num) })
+            .attr("id", function(d) { return "line_" + (d.from.num + '-' + d.to.num); })
             .attr("class", function(d) { 
 	            
             	var c = "line room_"+d.from.num+" room_"+d.to.num+" a_" + escape(d.to.zone||d.from.zone);
@@ -822,11 +826,9 @@ var JujuMapper = function(o) {
         if (cb) {
         	if (Config.debug)
         		log('Mapper.render callback');
-        	cb.call();
+        	cb();
         }
-        
-        
-	}
+	};
 
 	var updateVisible = function(cb) {
 		
@@ -838,10 +840,9 @@ var JujuMapper = function(o) {
 				j(o.container + " .room").tooltip('destroy');
 			} catch (ex) {}
 		
-    	svg.selectAll(".room, .line, .tag").remove();
-    	W = j(o.container).width(), H = j(o.container).height();
+    	
         render(cb);
-	}
+	};
 	
 	var moveRoom = function(r) {
 		
@@ -859,7 +860,7 @@ var JujuMapper = function(o) {
 		.transition()
 		.duration(500)
 		.attr("d", drawExit);
-	}
+	};
 
 	var upload = function(o) {
 		
@@ -983,7 +984,7 @@ var JujuMapper = function(o) {
 			done = (pass == n || !data.rooms.length);
 		}
 		
-	}
+	};
 
 	var zoom = function(d) {
 		
@@ -1001,7 +1002,7 @@ var JujuMapper = function(o) {
 			o.scale = 0.4;
 		
 		init();
-	}
+	};
 	
 	var stretch = function(r) {
 		
@@ -1045,7 +1046,7 @@ var JujuMapper = function(o) {
 			go(at);
 			log("Mapper.stretch: canvas stretch based on "+stringify(r));
 		}
-	}
+	};
 	
 	var zoneCheck = function(r) {
 		
@@ -1066,7 +1067,7 @@ var JujuMapper = function(o) {
 			//log(a);
 		}
 		//log(areas);
-	}
+	};
 	
 	var update = function(r, auto) {
 	   
@@ -1297,7 +1298,7 @@ var JujuMapper = function(o) {
 		   go(r);
 	   else
 		   return 0;
-	}
+	};
 	
 	var path = function(to) {
 		
@@ -1344,7 +1345,7 @@ var JujuMapper = function(o) {
 		}
 		
 		return null;
-	}
+	};
 	
 	var go = function(r) {
 	    
@@ -1370,20 +1371,22 @@ var JujuMapper = function(o) {
 		if (win)
 			win.title(r.name);
 			//win.title(r.num + ': ' + r.name + ' - ' + r.zone);
-	}
+	};
 	
 	var process = function(d) {
 
-		log('Mapper.process enter');
+		log('Mapper.process');
 		
-		if (!d.has('room.info'))
+		if (!d.start('room.info'))
 		    return d;
 		
 		try {
-			var r = eval('(' + d.match(/[^]+? (.*)/)[1] + ')');
-			log(r);
+			var data = d.match(/^[^ ]+ (.*)/)[1];
+			log(data);
+			var r = eval('('+data+')');
 		} catch(err) {
 			log('Mapper gmcp parse error: '+err);
+			return;
 		};
 		
 		log('Mapper.gmcp: '+stringify(r));
@@ -1410,7 +1413,7 @@ var JujuMapper = function(o) {
 		}
 		
 		return d; 
-	}
+	};
 
 	var context = function() {
 		if (!j('.mapper .context').length) {
@@ -1434,7 +1437,7 @@ var JujuMapper = function(o) {
 			j('.mapper .context .trans').hide();
 		 	selection = [];
 		}
-	}
+	};
 	
 	j(document).on('click', id + ' .context .reveal', function(evt) {
 		j(this).toggleClass('on');
@@ -1548,7 +1551,7 @@ var JujuMapper = function(o) {
 		
 		var o = {
 			data: j(id + ' .context #upload textarea').val()
-		}
+		};
 		
 		var type = j(id + ' .context #upload .icon-check').attr('data');
 		
@@ -1568,7 +1571,7 @@ var JujuMapper = function(o) {
 		
 		var o = {
 			data: j(id + ' .context #upload textarea').val()
-		}
+		};
 		
 		var type = j(id + ' .context #upload .icon-check').attr('data');
 		
@@ -1656,5 +1659,5 @@ var JujuMapper = function(o) {
 	return {
 		process: process,
 		init: init
-	}
-}
+	};
+};

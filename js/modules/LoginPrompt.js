@@ -1,12 +1,13 @@
 var LoginPrompt = function(o) {
-	
+
 	var user, line, pastuser = 0;
-	var id = o.id = o.id||'#login-prompt';
+	var id = o.id = o.id || '#login-prompt';
 	var pass = param('kongregate_game_auth_token')||null;
 	var shown = 0;
 	//var pass = null;
 	
 	try {
+		o['class'] = 'login-prompt';
 	    o.show = new RegExp(o.show);
 	    o.error = new RegExp(o.error);
 	    o.dismiss = new RegExp(o.dismiss);
@@ -113,14 +114,14 @@ var LoginPrompt = function(o) {
 		
 		new Modal(o);
 		
-		j(id+' .pass').keypress(function(e) { 
+		j(id + ' .pass').keypress(function(e) { 
 			if (e.which == 13) { 
 				e.preventDefault(); 
 				go(e); 
 			} 
 		});
 		
-		j(id+' .user').keypress(function(e) { 
+		j(id + ' .user').keypress(function(e) { 
 			if (e.which != 13) 
 				return true;
 			e.preventDefault(); 
@@ -131,7 +132,7 @@ var LoginPrompt = function(o) {
 		});
 		
 		setTimeout(function() {
-	    	j(id+' .user').focus();
+	    	j(id + ' .user').focus();
 		}, 1000);
 	};
 

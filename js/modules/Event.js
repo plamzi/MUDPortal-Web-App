@@ -21,6 +21,7 @@ var Event = {
 		'after_display': [],
 		'before_send': [],
 		'scrollview_ready': [],
+		'scrollview_add': [],
 		'chatterbox_ready': [],
 		'will_msdp': [],
 		'msdp': [],
@@ -29,6 +30,8 @@ var Event = {
 		'will_atcp': [],
 		'atcp': [],
 		'will_mxp': [],
+		'mxp_elements': [],
+		'mxp_entity': [],
 		'mxp_frame': [],
 		'mxp_dest': [],
 		'window_open': [],
@@ -78,7 +81,7 @@ var Event = {
 			log('Event.js: This event already exists and will not be created: ' + event);
 			return;
 		}
-		q[event] = [];
+		this.q[event] = [];
 		log('Event.js: Event created: ' + event);
 	},
 	
@@ -87,7 +90,7 @@ var Event = {
 			log('Event.js: This event does not exist and will not be destroyed: ' + event);
 			return;
 		}
-		delete q[event];
+		delete this.q[event];
 		log('Event.js: Event destroyed: ' + event);
 	}
 };

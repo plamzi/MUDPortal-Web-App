@@ -116,21 +116,18 @@ var GroupTab = function(o) {
 	
 	var update = function(d) {
 		
-		if (d.has('group {')) {
-			log(stringify(d));
+		if (d.start('group {')) {
 			try {
-				group = eval('(' + d.match(/[^]+? (.*)/)[1] + ')');
-				draw();
-				aff();
+				group = JSON.parse(d.match(/^[^ ]+ (.*)/)[1]);
+				draw(); aff();
 			} catch(err) {
 				console.log('GroupTab gmcp parse error: '+err);
 			};
 		}
 		else
-		if (d.has('char.affs')) {
-			log(stringify(d));
+		if (d.start('char.affs')) {
 			try {
-				affs = eval('(' + d.match(/[^]+? (.*)/)[1] + ')');
+				affs = JSON.parse(d.match(/^[^ ]+ (.*)/)[1]);
 				aff();
 			} catch(err) {
 				console.log('GroupTab gmcp parse error: '+err);

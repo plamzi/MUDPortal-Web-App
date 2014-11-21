@@ -5,10 +5,238 @@
 
 body {
 	outline: 0 none !important;
-	font-family: "Lucida Console","DejaVu Sans Mono","Open Sans",Arial,Helvetica,sans-serif;
+	font-family: "Lucida Console","DejaVu Sans Mono","Open Sans",Arial, Helvetica,sans-serif;
 	font-size: 12px;
 	min-height: 100%;
 	min-width: 100%;
+	position: absolute;
+}
+
+a {
+    color: #ffeb9e;
+}
+
+a, a:hover {
+    text-decoration: none;
+}
+
+textarea {
+    background-color: rgba(0, 0, 0, 0.6) !important;
+}
+
+@media (min-device-width: 1025px) {
+    a, .menu-dropdown span.subtitle {
+        transition: color 200ms ease-in-out 0s;
+    }
+    form.style input, form.style select, form.style textarea, form.style button:hover, form.style input.button:hover, form.style input[type="button"]:hover, form.style input[type="submit"]:hover, .mobile-switcher {
+        transition: color 250ms ease-in-out 0s, background 250ms ease-in-out 0s;
+    }
+    .menu-dropdown li.level1:hover, .menu-dropdown li.remain, .menu-dropdown li.level2:hover, .menu-sidebar li.level1 .level1:hover, .menu-sidebar li.level1 > .level1:hover:before, .searchbox .results li.result.selected {
+        transition: all 300ms ease-in-out 0s;
+    }
+    .menu-dropdown li.level1:hover .level1, .menu-dropdown li.remain .level1, .menu-dropdown li.level1:hover .level1 span.subtitle, .menu-dropdown li.remain .level1 span.subtitle {
+        transition: color 300ms ease-in-out 0s;
+    }
+    .drive-scale:hover, #system .pagination a:hover {
+        animation-duration: 150ms;
+        animation-fill-mode: both;
+        animation-name: scale;
+    }
+    @keyframes scale {
+    0%, 100% {
+        transform: scaleY(1);
+    }
+    50% {
+        transform: scaleY(1.8);
+    }
+    }
+    @keyframes scale {
+    0%, 100% {
+        transform: scale(1);
+    }
+    50% {
+        transform: scale(1.2);
+    }
+    }
+    .drive-flash:hover, #system .item > p.links a:hover, #system .item div.reply a:hover {
+        animation-duration: 400ms;
+        animation-fill-mode: both;
+        animation-name: flash;
+    }
+    @keyframes flash {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+    }
+    @keyframes flash {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.3;
+    }
+    }
+    .drive-transform:hover, .menu-dropdown li.level1 > .level1:hover > span, .menu-dropdown li.level2:hover a.level2, .menu-sidebar li.level1 .level1:hover > span {
+        animation-duration: 300ms;
+        animation-fill-mode: both;
+    }
+    .drive-transform:hover {
+    }
+    .menu-dropdown li.level1 > .level1:hover > span {
+        animation-name: fadeInY;
+    }
+    @keyframes fadeInY {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0px);
+    }
+    }
+    @keyframes fadeInY {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0px);
+    }
+    }
+    .drive-transform:hover, .menu-dropdown li.level2:hover a.level2, .menu-sidebar li.level1 .level1:hover > span {
+        animation-name: fadeInX;
+    }
+    @keyframes fadeInX {
+    0% {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0px);
+    }
+    }
+    @keyframes fadeInX {
+    0% {
+        opacity: 0;
+        transform: translateX(-10px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateX(0px);
+    }
+    }
+    .drive-bounce:hover, .button-default:hover, .button-primary:hover, form.style button:hover, form.style input[type="button"]:hover, form.style input[type="submit"]:hover {
+        animation-duration: 300ms;
+        animation-fill-mode: both;
+        animation-name: bounce;
+    }
+    @keyframes bounce {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    30% {
+        transform: translateY(3px);
+    }
+    60% {
+        transform: translateY(-3px);
+    }
+    }
+    @keyframes bounce {
+    0%, 100% {
+        transform: translateY(0px);
+    }
+    30% {
+        transform: translateY(3px);
+    }
+    60% {
+        transform: translateY(-3px);
+    }
+    }
+}
+
+h1, h3, a:hover, blockquote, .menu-dropdown li.active .level1, .menu-dropdown li.active .level1 span.subtitle, .menu-dropdown a.level2:hover, .menu-dropdown a.level2:hover span.subtitle, .menu-dropdown a.level3:hover, .menu.menu-sidebar li.level1.active > .level1, .menu.menu-sidebar li.level1.active > .level1:hover > span, .menu-sidebar .level2 a:hover, .mod-box-color .button-default, .mod-box-color form.style button, .mod-box-color form.style input[type="button"], .mod-box-color form.style input[type="submit"], form.style button:hover, form.style input[type="button"]:hover, form.style input[type="submit"]:hover, #system .title a, .searchbox .results li.more-results:hover, .searchbox .results li.result.selected, .wk-slideshow-tabs-drive .nav li.active {
+    color: #fff9e5;
+    text-shadow: 0 0 2px rgba(255, 144, 0, 0.4);
+}
+
+.kbutton:before, form .button:before {
+    background-image: url("../../../images/tools/button_default_effect.png") !important;
+}
+
+.kbutton:before, form .button:before {
+    background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAAAiCAYAAACp43wlAAACHUlEQVRo3u3Y0W6DMAwFUJv+/ydT74VpEaLJ9bUdso1IqEBoaX2wDVUzkw9DB+t6LJuIvI7XzbGtF9uv47PP89uxf2v2t8d/DxORd7PYaWn3vy/27Rf799Pc3szvp/O189Z8Jxms/wQ3CNLCXG3rYF4u1j+dJ2v0AmUX61fbNpiXapBPEB4QFEMHF0QGhnQCx6AgINb5LiUgAkL03odAaABBnNkhQPB771sKBAFCMSozhEEZZdBUEAED64Xw9A8NZEevvkdhBGzopSDeLEF7hwZL1QjHgFe0bI2yowREwCAyEKuWLA+MOMoVBZKRJbJIdmRniVRkRwUI2ie8t7ozMwSF8TTxMhAW5a+BRDBCIGiWCAEwuqua1dTRuy4hSxScHSxIFkoP5i6Qc7CzMcpAvChoecp+Smee1j1lzP1fVQYIGhwExdsvqh8MPX0lo3GPr34QJAOFad5KZC7y480JhO4LYWSAME3fmxFVf7+zGcM27XQQFiWSEdkYaBDZ4IcwGBBvGUFhotmhzh9uTiQWwoXBgjC1XYPb2T2EDbS3N/ivdhKEbbhKHhcpY0zAMkoRd6UHQJDgaCCLspu7EfOW+FlTQDKCqYUIknxll0Fkg2TVfg2e1yYDpUFUgbB3RzIxSzIDnB68KhAmmCr3Dis6dimQrFJ0Z/CnQMwGWSkTlkO4G2R1oFsDsgLIXVBL/vCVQf7leEAekGc8IL9ofAGA79DMoBtu0AAAAABJRU5ErkJggg==") !important;
+}
+
+.kbutton, form .button, .app .button {
+    background: url("../../../images/tools/button_default.png") repeat-x scroll 50% 0 transparent !important;
+    border: medium none !important;
+    border-radius: 2px !important;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.3);
+    color: #8a8c8c;
+    font-family: "OpenSansLight",Arial,Helvetica,sans-serif !important;
+    font-size: 14px !important;
+    font-weight: normal !important;
+    padding: 6px 12px !important;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.5);
+}
+.kbutton, form .button, .app .button {
+    background: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAA4CAYAAAD959hAAAAAZElEQVRYw+3SsQ2AQAxD0RS3IjMiIbEUxwTUscIKFL8I4AzwZN95rNu+BHjjmOeFglIGCmYqeicUnTD1w8rdE/LDxn856TdU+2G/oLKH7cpfHDadsKpYMOAzaNCgQYMGDRp8fjeRCVbDjfq8HgAAAABJRU5ErkJggg==") repeat-x scroll 50% 0 transparent !important;
+    border: medium none !important;
+    border-radius: 2px !important;
+    font-family: "OpenSansLight",Arial,Helvetica,sans-serif !important;
+    font-size: 14px !important;
+    font-weight: normal !important;
+    padding: 6px 12px !important;
+}
+.kbutton:hover, form .button:hover {
+    animation-duration: 300ms;
+    animation-fill-mode: both;
+    animation-name: bounce;
+    color: #ccc;
+}
+.btn.active, .btn:active {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5) inset, 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+.btn:hover, .btn:focus, .btn:active, .btn.active, .btn.disabled, .btn[disabled] {
+    background-color: #4d4d4d;
+    color: #fff;
+}
+.btn.active, .btn:active {
+    background-image: none;
+    outline: 0 none;
+}
+.btn {
+    border-color: rgba(0, 0, 0, 0.7);
+}
+.btn {
+    background-clip: padding-box;
+    background-color: #5c5c5c;
+    background-image: linear-gradient(to bottom, #666666, #4d4d4d);
+    background-repeat: repeat-x;
+}
+.btn {
+    -moz-border-bottom-colors: none;
+    -moz-border-left-colors: none;
+    -moz-border-right-colors: none;
+    -moz-border-top-colors: none;
+    border-image: none;
+    border-radius: 4px;
+    border-style: solid;
+    border-width: 1px;
+    cursor: pointer;
+    display: inline-block;
+    font-size: 14px;
+    line-height: 20px;
+    margin-bottom: 0;
+    padding: 4px 12px;
+    text-align: center;
+    vertical-align: middle;
 }
 
 #main:before, #content {
@@ -16,6 +244,10 @@ body {
 }
 
 .icon { height: 16px; width: 16px; text-align: center }
+
+.pointer:hover {
+	cursor: pointer;
+}
 
 button.disabled { opacity: 0.35 !important; }
 
@@ -68,6 +300,7 @@ button.disabled { opacity: 0.35 !important; }
     top: 0px; 
     clear: both;
 	pointer-events: auto;
+	z-index: 1;
 }
 
 .app .window .content { 
@@ -95,12 +328,23 @@ button.disabled { opacity: 0.35 !important; }
 	width: 94%;
 }
 
-.app .handle i {
-	float: right;
-	margin-right: 6px;
-	position: relative; 
-	top: -18px; 
-	z-index: 1;
+.app .handle .toolbar {
+	margin-right: 4px;
+	position: absolute; 
+	top: 0px;
+	right: 0px
+}
+
+.app .handle .toolbar i {
+    margin-right: 5px
+}
+
+.app .window .inbar {
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.app .window .inbar:hover {
+    cursor: move
 }
 
 .app .out, .app .freeze {
@@ -222,6 +466,10 @@ button.disabled { opacity: 0.35 !important; }
 	margin: 10px 0px;	
 }
 
+.modal .close {
+	color: #ddd;
+}
+
 .dropdown-menu {
 	z-index: 1000;
 }
@@ -251,6 +499,10 @@ button.disabled { opacity: 0.35 !important; }
 
 .modal .active, .group-member.active {
 	background-color: rgba(255, 255, 255, 0.2);
+}
+
+.tooltip {
+	pointer-events: none;
 }
 
 .app .ui-icon-gripsmall-diagonal-se {
@@ -376,7 +628,12 @@ p:focus, ul:focus, div:focus {
 
 .app .tab-content { background-color: black; font-size: 13px; }
 
-.app .nav-tabs { padding: 0px; padding: 0px; margin: 0px }
+.app .nav-tabs { 
+    padding: 0px; 
+    padding: 0px; 
+    margin: 0px; 
+    border-bottom-color: #444;
+}
 
 .app .nav-tab { padding-left: 4px; }
 
@@ -404,7 +661,7 @@ p:focus, ul:focus, div:focus {
 .app .bar-window { position: fixed; background-color: transparent; cursor: move }
 
 .bar-window .status	{ position: absolute; top: 10px; left: 0px }
-.bar-window .bars   { position: absolute; top: 11px; left: 0px }
+.bar-window .bars   { position: absolute; top: 8px; left: 0px }
 .bar-window .smoke 	{ position: absolute; top: 10px; left: 0px; overflow: hidden; height 0px; }
 
 .bar-window .bar-wrapper { position: absolute; width: 200px; left: 127px; top: 0px; }
@@ -832,4 +1089,9 @@ a:focus {
 	bottom: 0px; 
 	margin: 0px auto;
 	padding: 0px;
+}
+
+.me-editor {
+    width: 96%;
+    height: 220px;
 }

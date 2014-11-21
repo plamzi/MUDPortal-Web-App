@@ -31,10 +31,12 @@ var Toolbar = function () {
 	var update = function(a) {
 		j('#tmp-toolbar').empty();
 		j('.window').each(function() {
-			j('#tmp-toolbar').append('<button href="#'+j(this).attr('id')
-			+ '" class="btn kbutton">'
-			+ ( j(this).get(0).win.title() || j(this).attr('id') ) 
-			+ '</button>');
+			j('#tmp-toolbar').append(
+				'<button href="#'+j(this).attr('id')
+				+ '" class="btn kbutton">'
+				+ ( j(this).get(0).win.title() || j(this).attr('id') ) 
+				+ '</button>'
+			);
 		});
 	};
 
