@@ -1,14 +1,15 @@
 MUDPortal-Web-App
 =================
 
-Web UI code for the MUD game client running on http://www.mudportal.com/play
+Web UI code for the MUD game client running @ http://www.mudportal.com/play | http://www.cloudgamer.org/play
 
 Screenshots:
 http://www.mudportal.com/images/Promo1.png
 http://www.mudportal.com/images/Promo2.png
 http://www.mudportal.com/images/PromoToolbar.png
 
-Features include but are not limited to:
+
+Features include:
 
 * A modern window-based web UI with draggable and resizable windows
 
@@ -26,7 +27,7 @@ Features include but are not limited to:
 
 * 256-color support, including background colors
 
-* Unicode font support 
+* Unicode font support
 
 * Vector-based world mapper with flexible edit mode to allow for mapping any MUD world via exploration
 

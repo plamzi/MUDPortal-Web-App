@@ -1,25 +1,25 @@
-/* Havoc (c) 2014 */
-
 /* Havoc Websocket rich-text UI customizations. Included when &havoc is set in the URL */
 
-Config.proxy = 'ws://' + Config.host + ':' + Config.port;
-Config.bare = 1;
-Config.nocore = 1;
-Config.base64 = 1;
-Config.debug = 1;
-Config.notrack = 1;
+if (param('havoc')) {
+	Config.port = Config.port.length ? Config.port : 6001;
+	Config.proxy = 'ws://' + Config.host + ':' + Config.port + '/';
+	Config.bare = 1;
+	Config.nocore = 1;
+	Config.base64 = 1;
+	Config.debug = 1;
+	Config.notrack = 1;
+	
+	Event.listen('socket_open', function() {
+		Config.Socket.write('{ portal: 1 }');
+	});
+	
+	j('body').css({ 
+	    fontFamily: 'Open Sans, "Lucida Console", "Courier New"',
+	    fontSize: 15
+	});
+}
 
-Event.listen('socket_open', function() {
-	Config.Socket.write('{ portal: 1 }');
-});
-
-j('body').css({ 
-    fontFamily: 'Open Sans, "Lucida Console", "Courier New"',
-    fontSize: 15
-});
-
-
-if (!param('gui')) {
+if (param('havoc') && !param('gui')) {
 
     if (Config.host && Config.port)
         Config.ScrollView = new ScrollView();
