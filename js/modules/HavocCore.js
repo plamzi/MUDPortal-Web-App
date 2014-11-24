@@ -1,6 +1,7 @@
 /* Havoc Websocket rich-text UI customizations. Included when &havoc is set in the URL */
 
 if (param('havoc')) {
+	
 	Config.port = Config.port.length ? Config.port : 6001;
 	Config.proxy = 'ws://' + Config.host + ':' + Config.port + '/';
 	Config.bare = 1;
@@ -21,8 +22,7 @@ if (param('havoc')) {
 
 if (param('havoc') && !param('gui')) {
 
-    if (Config.host && Config.port)
-        Config.ScrollView = new ScrollView();
+    Config.ScrollView = new ScrollView();
     
     Config.MistyBars = new MistyBars({ 
         
@@ -70,10 +70,11 @@ if (param('havoc') && !param('gui')) {
         }
     });
 
-    j(document).ready(function() {
-    	Config.Toolbar = new Toolbar();
-    	Event.listen('window_open', Config.Toolbar.update);
-    	Event.listen('window_close', Config.Toolbar.update);
-    	Event.listen('window_front', Config.Toolbar.front);
-    });
+    if (!param('gui'))
+	    j(document).ready(function() {
+	    	Config.Toolbar = new Toolbar();
+	    	Event.listen('window_open', Config.Toolbar.update);
+	    	Event.listen('window_close', Config.Toolbar.update);
+	    	Event.listen('window_front', Config.Toolbar.front);
+	    });
 }

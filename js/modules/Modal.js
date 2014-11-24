@@ -1,17 +1,21 @@
 
 var Modal = function(o) {
 	
+	log('Modal.init');
+	
 	o.backdrop = o.backdrop || 0;
 	
 	if (o.replace) {
+		log('Modal replace mode');
 		if (j('.modal').length && j('.modal').is(':visible')) {
+			//log('modal found in replace mode');
 			j('.modal h3').html(o.title);
-			j('.modal .modal-body p').html(o.text || o.html);
+			j('.modal .modal-body').html(o.text || o.html);
 			return;
 		}
 	}
-	else
-		j('.modal').modal('hide').remove();
+	
+	j('.modal').modal('hide');
 	
 	j('body').append('\
 		<div class="modal '+(o['class'] || '')+' fade"><div class="modal-dialog"><div class="modal-content">\
@@ -20,7 +24,6 @@ var Modal = function(o) {
 				<h3></h3>\
 			</div>\
 			<div class="modal-body">\
-				<p></p>\
 			</div>\
 			<div class="modal-footer">\
 				<button class="btn btn-primary kbutton dismiss" data-dismiss="modal" aria-hidden="true">OK</button>\
@@ -32,14 +35,14 @@ var Modal = function(o) {
 		j('.modal h3').html(o.title);
 	
 	if (o.text || o.html)
-		j('.modal-body p').html(o.text || o.html);
+		j('.modal-body').html(o.text || o.html);
 
-	if (o.closeText)
-		j('.modal .dismiss').html(o.closeText);
+	if (o.closeText || o.cancelText)
+		j('.modal .dismiss').html(o.closeText || o.cancelText);
 
 	if (o.closeable == false || o.closeable == 0)
 		j('.modal .close').remove();
-	
+
 	if (o.css) {
 		if (o.css.width)
 			o.css['margin-left'] = -(o.css.width / 2); 
@@ -47,13 +50,60 @@ var Modal = function(o) {
 	}
 	
 	if (o.buttons) {
+		
 		j('.modal-footer .kbutton').remove();
-		for (var i = 0; i < o.buttons.length; i++) {
-			j('.modal-footer').prepend('<button class="btn btn-default kbutton custom-'+i+'" data-dismiss="'+(o.buttons[i].keep?'':'modal')+'" \
-			aria-hidden="true">'+o.buttons[i].text+'</button>');
-			j('.modal-footer .custom-'+i).click(o.buttons[i].click);
-			if (o.buttons[i].css)
-				j('.modal-footer .custom-'+i).css(o.buttons[i].css);
+		
+		if (o.buttons.pop) {
+			for (var i = 0; i < o.buttons.length; i++) {
+				
+				var b = o.buttons[i];
+				
+				j('.modal-footer').append('<button class="btn btn-default kbutton custom-'+i+'" data-dismiss="'+(b.keep?'':'modal')+'">'+b.text+'</button>');
+				
+				if (b.send)
+					j('.modal-footer .custom-'+i).click(function(cmd) {
+						return function() { Config.Socket.write(cmd); }
+					}(b.send));
+					
+				if (b.click)
+					j('.modal-footer .custom-'+i).click(b.click);
+				
+				if (b.css)
+					j('.modal-footer .custom-'+i).css(b.css);
+			}
+		}
+		else {
+			var n = 0;
+			for (var i in o.buttons) {
+				j('.modal-footer').append('<button class="btn btn-default kbutton custom-'+n+'" data-dismiss="modal">'+i+'</button>');
+				j('.modal-footer .custom-'+n).click(function(cmd) {
+					return function() { Config.Socket.write(cmd); }
+				}(o.buttons[i]));
+				n++;
+			}
+		}
+	}
+	
+	if (o.links) {
+		
+		j('.modal-footer').prepend('<div class="modal-links left" style="position: relative; z-index: 1; font-size: 11px; opacity: 0.7"></div>');
+		
+		if (o.links.pop)
+		for (var i = 0; i < o.links.length; i++) {
+			j('.modal-links').append('<a class="link-'+i+' left" data-dismiss="'+(o.links[i].keep?'':'modal')+'">'+o.links[i].text+'</a><br>');
+			j('.modal-links .link-'+i).click(o.links[i].click);
+			if (o.links[i].css)
+				j('.modal-links .link-'+i).css(o.links[i].css);
+		}
+		else {
+			var n = 0;
+			for (var i in o.links) {
+				j('.modal-links').append('<a class="link-'+n+'" data-dismiss="modal">'+i+'</a><br>');
+				j('.modal-links .link-'+n).click(function(cmd) {
+					return function() { Config.Socket.write(cmd); }
+				}(o.links[i]));
+				n++;
+			}
 		}
 	}
 	
@@ -65,6 +115,38 @@ j('body').on('shown.bs.modal', function() {
 });
 
 j('body').on('hide.bs.modal', function() {
-	try { j('.modal .modal-body').niceScroll('destroy'); } catch(ex) {};
+	try { 
+		j('.modal .modal-body').niceScroll('destroy');
+		j('.modal a, .modal button').off('click');
+		j('.modal input, .modal textarea').off('keywdown');
+	} catch(ex) {};
 	j('.modal').remove();
+});
+
+Event.listen('gmcp', function(d) {
+	
+	if (!d.start('Modal '))
+		return d;
+	
+	log('Modal detected gmcp trigger');
+	
+	try {
+		
+		var o = JSON.parse(d.match(/^[^ ]+ (.*)/)[1]);
+
+		if (o.close && o.close == 1)
+			return j('.modal').modal('hide');
+		
+		if (o.mxp) {
+			o.text = Config.mxp.translate(o.mxp);
+			o.replace = o.gmcp = 1;
+		}
+		
+		new Modal(o);
+	}
+	catch(ex) {
+		log(ex);
+	}
+	
+	return d;
 });

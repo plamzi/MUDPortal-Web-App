@@ -23,7 +23,8 @@ if (Config.embed)
 	j('body#page').css({ background: 'transparent'});
 	
 j(document).ready(function () {
-	if (Config.bare) {
+	
+	if (Config.bare || Config.clean) {
 		j('#header').remove();
 		j('#maininner #content').attr('id', 'app-content');
 	}

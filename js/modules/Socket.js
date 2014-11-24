@@ -325,8 +325,6 @@ var Socket = function(o) {
 			}
 		}
 
-		t = Event.fire('internal_mxp', t);
-
 		if (!utf8 && t.has('ÿú* UTF-8ÿð')) {
 			utf8 = 1;
 			log('UTF-8 enabled.');
@@ -388,9 +386,11 @@ var Socket = function(o) {
 
 			t = t.replace(/\xff.\x01/g,'');
 		}
+
+		t = Event.fire('internal_mxp', t);
 		
 		//log('after_protocols: '+t);
-		
+
 		t = Event.fire('after_protocols', t, self);
 		
 		if (t.has('\x01') && Config.debug) {

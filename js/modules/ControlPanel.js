@@ -52,7 +52,7 @@ var ControlPanel = function () {
 				if ((Config.clean || Config.solo) && Config.host != P.host)
 					continue;
 				var i = d.index('host', P.host);
-				j(id + ' .gamelist .profiles').append('<a class="profile-link" host="'+d[i].host+'" port="'+d[i].port+'" thumb="'+d[i].img+'" name="'+p+'"><i class="icon-star-empty"></i> '+p+'<br></a>');
+				j(id + ' .gamelist .profiles').append('<a class="profile-link" host="'+d[i].host+'" port="'+d[i].port+'" thumb="'+d[i].img+'" profile="'+p+'" name="'+d[i].name+'"><i class="icon-star-empty"></i> '+p+'<br></a>');
 			}
 		}
 	}
@@ -172,19 +172,19 @@ var ControlPanel = function () {
 		var tmclink = j(this).hasClass('tmc-link');
 		
 		var t = j(id + ' .gamepanel');
-		
 		t.removeAttr('profile');
 		
 		var name = j(this).attr('name');
 		var host = j(this).attr('host');
 		var port = j(this).attr('port');
 		var thumb = j(this).attr('thumb');
+		var profile = j(this).attr('profile');
 		
 		t.attr('name', name);
 		t.attr('host', host);
 		t.attr('port', port);
 
-		var url = '/play?host=' + host + '&port=' + port + '&name=' + encodeURIComponent(name) + (profile?'&profile='+encodeURIComponent(name):'');
+		var url = '/play?host=' + host + '&port=' + port + '&name=' + encodeURIComponent(name) + (profile?'&profile='+encodeURIComponent(profile):'');
 		url = "<a href=\""+url+"\" class=\"button-primary\">play</a>";
 		
 		if (profile)
@@ -194,7 +194,7 @@ var ControlPanel = function () {
 		
 		t.empty();
 		
-		t.append('<div class="left game-blurb" style="padding: 4px 18px 0px 4px"><img class="game-thumb" src="'+thumb+'"></div><div class="left" style="padding-top: 4px">'+name+'<div style="height: 8px; clear: both"></div>'+url);
+		t.append('<div class="left game-blurb" style="padding: 4px 18px 0px 4px"><img class="game-thumb" src="'+thumb+'"></div><div class="left" style="padding-top: 4px">'+name+': '+profile+'<div style="height: 8px; clear: both"></div>'+url);
 		
 		if (mobile)
 			return;
@@ -284,7 +284,7 @@ var ControlPanel = function () {
 
 	if (param('profile')) {
 		j(id + ' .profile-link').each(function() {
-			if (j(this).text() == param('profile'))
+			if (j(this).attr('profile') == param('profile'))
 				j(this).click();
 		});
 	}
@@ -393,11 +393,12 @@ var ControlPanel = function () {
 			if (!pref.profiles)
 				pref.profiles = {};
 
-			pref.profiles[name] = {
+			pref.profiles[profile] = {
 				macros: [],
 				triggers: [],
 				settings: [],
-				host: j(this).parent().attr('host')
+				host: j(this).parent().attr('host'),
+				name: name
 			};
 		}
 				
@@ -412,7 +413,7 @@ var ControlPanel = function () {
 			d = j(this).find('.icon-star').length;
 			
 			if (profile) {
-				pref.profiles[name].macros.push([a, b, c, d]);
+				pref.profiles[profile].macros.push([a, b, c, d]);
 			}
 			else
 				pref.sitelist[name].macros.push([a, b, c, d]);
@@ -428,7 +429,7 @@ var ControlPanel = function () {
 			c = j(this).find('.icon-check').length;
 			
 			if (profile)
-				pref.profiles[name].triggers.push([a, b, c]);
+				pref.profiles[profile].triggers.push([a, b, c]);
 			else
 				pref.sitelist[name].triggers.push([a, b, c]);
 		});
@@ -441,7 +442,7 @@ var ControlPanel = function () {
 			};
 			
 			if (profile)
-				pref.profiles[name].settings.push(a);
+				pref.profiles[profile].settings.push(a);
 			else
 				pref.sitelist[name].settings.push(a);
 		});

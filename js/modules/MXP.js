@@ -23,6 +23,9 @@ var MXP = function () {
 
 	var process = function(t) {
 		
+		if (!t)
+			return t;
+		
 		if (t.has('\xff\xfa\x5b\xff\xf0')) {
 			log('Got IAC SB MXP IAC SE -> BEGIN MXP');
 			t = t.replace(/.\xff\xfa\x5b\xff\xf0/, '');
@@ -116,10 +119,10 @@ var MXP = function () {
 		/* <send> simple & single-choice tag: turn into links, escape &lt, &gt */
 		t = t.replace(/<send(|[^>]+)>(.+?)<\/send>/gi, '\x1b<a class="mxp tip"$1\x1b>$2\x1b<\/a\x1b>');
 		
-		t = t.replace(/hint=/gi, 'title=');
+		t = t.replace(/hint="([^|]+)"/gi, 'title="$1"');
 
 		/* <font> support */
-		t = t.replace(/\x1b\[[1-7]z<font([^]+?)>\x1b\[[1-7]z/gi, '\x1b<font style="$1>');
+		t = t.replace(/\x1b\[[1-7]z<font([^]+?)>\x1b\[[1-7]z/gi, '<font style="$1>');
 			t = t.replace(/<font([^]+?)color=([^ >]+)/gi, '<font$1color:$2;');
 			t = t.replace(/<font([^]+?)back=([^ >]+)/gi, '<font$1background-color:$2;');
 			t = t.replace(/<font([^]+?)face='([^']+)'/gi, '<font$1font-family:\'$2\';');
@@ -140,8 +143,21 @@ var MXP = function () {
 		/* open tags */
 		t = t.replace(/<([\/BRIUS]{1,3})>/gi, '\x1b<$1\x1b>');
 
-		if (t.match(/\x1b\[[1-7]z<frame/i)) {
+		t = frames(t);
 		
+		t = t.replace(/\x1b\[[1-7]z<[^\x1b>]+>/g, '');  /* strip any unsupported tags */
+		t = t.replace(/<[^\x1b>]+?>\x1b\[[1-7]z/g, '');
+		t = t.replace(/\x1b\[[1-7]z/g, ''); /* strip any remaining enclosures, for now */
+		
+		console.log(t);
+		
+		return t;
+	};
+	
+	var frames = function(t) {
+		
+		if (t.match(/\x1b\[[1-7]z<frame/i)) {
+			
 			j('#mxpf').html(
 				prep(
 				t
@@ -316,8 +332,7 @@ var MXP = function () {
 					msg.shift();
 					new Modal({
 						title: title,
-						text: msg.join('<br>'),
-						replace: true
+						text: msg.join('<br>')
 					});
 				}
 				else
@@ -328,28 +343,24 @@ var MXP = function () {
 			t = t.replace(/(\x1b\[[1-7]z<dest[\s\S]*\/dest>)/gi, '');
 		}
 		
-		t = t.replace(/\x1b\[[1-7]z<[^\x1b>]+>/g, '');  /* strip any unsupported tags */
-		t = t.replace(/<[^\x1b>]+?>\x1b\[[1-7]z/g, '');
-		t = t.replace(/\x1b\[[1-7]z/g, ''); /* strip any remaining enclosures, for now */
-		
 		return t;
 	};
 	
 	var multi = function(o, src) {
 		
-		var o = o.split('|');
+		var o = o.split('|'), hint = [];
 		
 		log(o);
 		
-		if (o.length == 1)
-			return;
-		
+		if (j(src).attr('hint') && j(src).attr('hint').has('|'))
+			hint = j(src).attr('hint').split('|');
+			
 		j('.mxp-dropdown').remove();
 		
 		j('body').append('<ul class="mxp-dropdown"></ul>');
 		
 		for (var i = 0; i < o.length; i++)
-			j('.mxp-dropdown').append('<li><a class="mxp" href="'+o[i]+'">'+o[i]+'</a>');
+			j('.mxp-dropdown').append('<li><a class="mxp" href="'+o[i]+'">' + (hint[i] || o[i]) + '</a>');
 		
 		j('.mxp-dropdown').css({
 			top: j(src).offset().top,
@@ -361,6 +372,10 @@ var MXP = function () {
 		j('input').on('mouseover', function() {
 			j('.mxp-dropdown').remove();
 		});
+	};
+	
+	var translate = function(t) {
+		return prep(process(t));
 	};
 	
 	j('body').on('click', '.mxp', function(evt) {
@@ -383,6 +398,7 @@ var MXP = function () {
 	
 	return {
 		process: process,
+		translate: translate,
 		enabled: function() { 
 			return mxp; 
 		},

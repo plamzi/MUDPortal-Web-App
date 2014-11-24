@@ -365,7 +365,7 @@ var ScrollView = function(o) {
 	
 	var title = function(t) {
 		win.title(t);
-		document.title = t;
+		document.title = param('name') || t;
 	}
 	
 	title(param('host') + ':' + param('port'));
