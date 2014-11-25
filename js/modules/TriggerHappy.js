@@ -35,7 +35,7 @@ var TriggerHappy = function(o) {
 			});
 		
 		if (Config.notriggers) 
-			return Config.socket.echo('Triggers disabled by official code.');
+			return log('Triggers disabled by official code.');
 		
 		for (g in G) {
 			if (G[g].host == host) {

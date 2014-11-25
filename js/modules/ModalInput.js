@@ -3,13 +3,15 @@ var ModalEditor = function(o) {
 	
 	var close = function(send) {
 		
+		console.log('ModalEditor close');
+		
 		if (send !== true)
 			Config.Socket.write(o.abort);
 		
 		j('.modal .me-dismiss').off();
 		j('.modal .me-send').off();
 		j('.modal .me-second').off();
-		j('.modal').modal('hide').remove();
+		j('.modal').modal('hide');
 	};
 	
 	var send = function() {
@@ -33,7 +35,7 @@ var ModalEditor = function(o) {
 	o.backdrop = o.backdrop || 0;
 	
 	if (o.replace) {
-		if (j('.modal').length && j('.modal').is(':visible')) {
+		if (j('.me-modal').length && j('.me-modal').is(':visible')) {
 			j('.modal h3').html(o.title);
 			j('.modal .modal-body').html(o.text || o.html);
 			return;
@@ -43,9 +45,9 @@ var ModalEditor = function(o) {
 	j('.modal').modal('hide').remove();
 	
 	j('body').append('\
-		<div class="modal '+(o['class'] || '')+' fade"><div class="modal-dialog"><div class="modal-content">\
+		<div class="modal '+(o['class'] || '')+' fade me-modal"><div class="modal-dialog"><div class="modal-content">\
 			<div class="modal-header">\
-				<button type="button" class="close me-dismiss" aria-hidden="true">×</button>\
+				<button type="button" class="close me-dismiss">×</button>\
 				<h3>' + (o.title || 'Multi-Line Input') + '</h3>\
 			</div>\
 			<div class="modal-body">\
@@ -56,15 +58,12 @@ var ModalEditor = function(o) {
 					placeholder="' + (o.placeholder || '') + '" ' + (o.tag ? 'value="' + (o.text || '') + '"' : '') + '">' + (o.tag ? '' : (o.text || o.html || '')) + (o.tag ? '' : '</textarea>') + '\
 			</div>\
 			<div class="modal-footer">\
-				<button class="btn btn-primary kbutton me-dismiss" aria-hidden="true">' + (o.closeText || 'Cancel') + '</button>\
-				<button class="btn btn-primary kbutton me-send" aria-hidden="true">' + (o.sendText || 'Send' ) + '</button>\
+				<button class="btn btn-primary kbutton me-dismiss">' + (o.closeText || 'Cancel') + '</button>\
+				<button class="btn btn-primary kbutton me-send">' + (o.sendText || 'Send' ) + '</button>\
 			</div>\
 		</div></div></div>\
 	');
 
-	j('.modal .me-dismiss').on('click', close);
-	j('.modal .me-send').on('click', send);
-	
 	/* password reset is a special case */
 	if (o.attr && (o.attr == 'reset' || o.attr == 'change')) {
 		
@@ -76,7 +75,7 @@ var ModalEditor = function(o) {
 			
 			var a = j('.modal .me-input').val(), b = j('.modal .me-pass2').val();
 			
-			if (a > 5 && b > 6 && a == b)
+			if (a.length > 5 && b.length > 5 && a == b)
 				j('.modal .me-send').removeClass('disabled');
 			else
 				j('.modal .me-send').addClass('disabled');
@@ -106,9 +105,9 @@ var ModalEditor = function(o) {
 		for (var i = 0; i < o.buttons.length; i++) {
 			
 			var b = o.buttons[i];
-			var cls = !b.click && !b.send ? ' me-send': ''; /* button without custom handling is the send one */
+			var cls = (!b.click && !exists(b.send)) ? ' me-send': ''; /* button without custom handling is the send one */
 				
-			j('.modal-footer').prepend('<button class="btn btn-default kbutton custom-'+i + cls + '" data-dismiss="'+(b.keep?'':'modal')+'">'+b.text+'</button>');
+			j('.modal-footer').prepend('<button class="btn btn-default kbutton custom-'+i + cls + '">'+b.text+'</button>');
 			
 			if (b.send)
 				j('.modal-footer .custom-'+i).click(function(cmd) {
@@ -123,6 +122,9 @@ var ModalEditor = function(o) {
 		}
 	}
 	
+	j('.modal .me-send').on('click', send);
+	j('.modal .me-dismiss').on('click', close);
+	
 	if (o.sendText)
 		j('.modal .me-send').text(o.sendText);
 	
@@ -135,7 +137,7 @@ var ModalEditor = function(o) {
 
 Event.listen('gmcp', function(d) {
 	
-	if (!d)
+	if (!d || !d.length)
 		return d;
 	
 	if (!d.start('ModalInput'))

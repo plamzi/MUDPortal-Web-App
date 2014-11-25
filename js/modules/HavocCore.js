@@ -9,6 +9,8 @@ if (param('havoc')) {
 	Config.base64 = 1;
 	Config.debug = 1;
 	Config.notrack = 1;
+	Config.notriggers = 1;
+	Config.nomacros = 1;
 	
 	Event.listen('socket_open', function() {
 		Config.Socket.write('{ portal: 1 }');
@@ -69,7 +71,21 @@ if (param('havoc') && !param('gui')) {
             return d; 
         }
     });
-
+	
+    if (!param('gui'))
+	    Event.listen('socket_close', function() {
+			new Modal({
+				title: 'Server Disconnected',
+				text: 'Lost server connection. This is normal if you\'re navigating away. If not, usually, this means a server boot / update. Please reload the page to make sure you have the latest app code.<br><br>',
+				backdrop: 'static',
+				closeable: 0,
+				buttons: [{
+				   text: 'Reload',
+				   click: function() { window.onbeforeunload = function() {}; window.location.reload(); }
+				}]
+			});
+		});
+	
     if (!param('gui'))
 	    j(document).ready(function() {
 	    	Config.Toolbar = new Toolbar();

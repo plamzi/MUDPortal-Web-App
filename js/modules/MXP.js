@@ -119,7 +119,7 @@ var MXP = function () {
 		/* <send> simple & single-choice tag: turn into links, escape &lt, &gt */
 		t = t.replace(/<send(|[^>]+)>(.+?)<\/send>/gi, '\x1b<a class="mxp tip"$1\x1b>$2\x1b<\/a\x1b>');
 		
-		t = t.replace(/hint="([^|]+)"/gi, 'title="$1"');
+		t = t.replace(/hint="([^|]+?)"/gi, 'title="$1"');
 
 		/* <font> support */
 		t = t.replace(/\x1b\[[1-7]z<font([^]+?)>\x1b\[[1-7]z/gi, '<font style="$1>');
@@ -332,7 +332,8 @@ var MXP = function () {
 					msg.shift();
 					new Modal({
 						title: title,
-						text: msg.join('<br>')
+						text: msg.join('<br>'),
+						replace: 1
 					});
 				}
 				else
@@ -365,7 +366,6 @@ var MXP = function () {
 		j('.mxp-dropdown').css({
 			top: j(src).offset().top,
 			left: j(src).offset().left + j(src).width() + 5,
-			zIndex: 200,
 			position: 'absolute'
 		});
 		

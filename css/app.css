@@ -249,7 +249,7 @@ h1, h3, a:hover, blockquote, .menu-dropdown li.active .level1, .menu-dropdown li
 	cursor: pointer;
 }
 
-button.disabled { opacity: 0.35 !important; }
+button.disabled { opacity: 0.35 !important; pointer-events: none; }
 
 .white { color: #ccc }
 
@@ -379,7 +379,7 @@ button.disabled { opacity: 0.35 !important; }
     box-shadow: 0 1px 1px rgba(0, 0, 0, 1.0) inset !important;
     margin: 0px;
     padding: 2px;
-	z-index: inherit;
+	z-index: 1060;
 }
 
 .app .mxp-dropdown a.mxp {

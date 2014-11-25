@@ -6,9 +6,8 @@ var Modal = function(o) {
 	o.backdrop = o.backdrop || 0;
 	
 	if (o.replace) {
-		log('Modal replace mode');
 		if (j('.modal').length && j('.modal').is(':visible')) {
-			//log('modal found in replace mode');
+			log('modal found in replace mode');
 			j('.modal h3').html(o.title);
 			j('.modal .modal-body').html(o.text || o.html);
 			return;
@@ -21,21 +20,18 @@ var Modal = function(o) {
 		<div class="modal '+(o['class'] || '')+' fade"><div class="modal-dialog"><div class="modal-content">\
 			<div class="modal-header">\
 				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>\
-				<h3></h3>\
+				<h3>' + (o.title || '') + '</h3>\
 			</div>\
 			<div class="modal-body">\
+			' + (o.info ? '<div class="alert alert-info">' + o.info + '</div>' : '') + '\
+			' + (o.error ? '<div class="alert">' + o.error + '</div>' : '') + '\
+			' + (o.text || o.html) + '\
 			</div>\
 			<div class="modal-footer">\
 				<button class="btn btn-primary kbutton dismiss" data-dismiss="modal" aria-hidden="true">OK</button>\
 			</div>\
 		</div></div></div>\
 	');
-	
-	if (o.title)
-		j('.modal h3').html(o.title);
-	
-	if (o.text || o.html)
-		j('.modal-body').html(o.text || o.html);
 
 	if (o.closeText || o.cancelText)
 		j('.modal .dismiss').html(o.closeText || o.cancelText);
@@ -124,6 +120,9 @@ j('body').on('hide.bs.modal', function() {
 });
 
 Event.listen('gmcp', function(d) {
+	
+	if (!d || !d.length)
+		return d;
 	
 	if (!d.start('Modal '))
 		return d;

@@ -8,8 +8,8 @@ var LoginPrompt = function(o) {
 	log('LoginPrompt.init gmcp is ' + o.gmcp);
 	
 	if (j('#login-prompt').length) {
-		o.replace = 1;
-		log('replace mode');
+		o.replace = 0;
+		log('forcing replace mode off');
 	}
 	
 	try {
@@ -86,7 +86,10 @@ var LoginPrompt = function(o) {
 		else
 		if (o.gmcp) {
 			if (pass)
-				Config.socket.write(stringify({ username: user, password: pass}));
+				Config.socket.write(stringify({ 
+					username: user, 
+					password: pass
+				}));
 			else
 				Config.socket.write(user);
 		}
@@ -105,9 +108,11 @@ var LoginPrompt = function(o) {
 			<div class="left" style="margin: 0px; opacity: 0.6; padding: 0px 40px 0px 0px">\
 			<img style="width: 90px;" src="/app/images/login.png"></div>\
 			<div class="left" style="width: 200px">\
-			<input class="user right" type="text" tabindex="1" autocapitalize="off" autocorrect="off" size=18 placeholder="'+(o.placeholder||'')+'">\
+			<form id="havoc-login-prompt" action="havoc/login">\
+			<input name="username" class="user right" type="text" tabindex="1" autocapitalize="off" autocorrect="off" size=18 placeholder="'+(o.placeholder||'')+'">\
 			<br><br>\
-			<input class="pass right" type="password" tabindex="2" autocapitalize="off" autocorrect="off" size=18 placeholder="password">\
+			<input name="password" class="pass right" type="password" tabindex="2" autocapitalize="off" autocorrect="off" size=18 placeholder="password">\
+			</form>\
 			</div></div>\
 		</div>';
 	
@@ -133,7 +138,9 @@ var LoginPrompt = function(o) {
 		    width: 400
 		};
 		
-		var enter = function() {
+		delete o.error, delete o.err;
+		
+		var onOpen = function() {
 		
 			j(id + ' .user').on('keydown', function(e) {
 				if (e.which == 13) {
@@ -153,8 +160,13 @@ var LoginPrompt = function(o) {
 			});
 		};
 		
-		j('body').on('shown.bs.modal', enter);
-		j('body').off('hide.bs.modal', enter);
+		var onClose = function() {
+			j(id + ' .user').off('keydown');
+			j(id + ' .pass').off('keydown');
+		};
+		
+		j('body').on('shown.bs.modal', onOpen);
+		j('body').on('hide.bs.modal', onClose);
 		
 		new Modal(o);
 		
@@ -173,7 +185,10 @@ var LoginPrompt = function(o) {
 
 Event.listen('gmcp', function(d) {
 	
-	if (!d.start('LoginPrompt '))
+	if (!d || !d.length)
+		return d;
+	
+	if (!d.start('LoginPrompt'))
 		return d;
 	
 	log('LoginPrompt detected gmcp trigger');

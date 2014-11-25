@@ -19,16 +19,15 @@ var MistyBars = function(o) {
 			var s = {};
 			s[key] = eval('(' + value + ')');
 
-			cm = exists(s['char.maxstats'])||cm;
-			cv = exists(s['char.vitals'])||cv;
-			cs = exists(s['char.status'])||cs;
+			cm = exists(s['char.maxstats']) || cm;
+			cv = exists(s['char.vitals']) || cv;
+			cs = exists(s['char.status']) || cs;
 			
 			redraw();
-			log('MistyBars: '+stringify(s));
+			log('MistyBars (default): '+stringify(s));
 			
 		} catch(err) {
-			log('MistyBars gmcp parse error: '+err);
-			log(d);
+			log('MistyBars gmcp parse error: ' + err);
 		};
 		
 		return d;
