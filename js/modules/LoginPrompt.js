@@ -5,7 +5,7 @@ var LoginPrompt = function(o) {
 	var pass = param('kongregate_game_auth_token') || null;
 	o['class'] = 'login-prompt';
 	
-	log('LoginPrompt.init gmcp is ' + o.gmcp);
+	log('LoginPrompt.init: gmcp is ' + o.gmcp);
 	
 	if (j('#login-prompt').length) {
 		o.replace = 0;
@@ -185,10 +185,10 @@ var LoginPrompt = function(o) {
 
 Event.listen('gmcp', function(d) {
 	
-	if (!d || !d.length)
+	if (!d)
 		return d;
-	
-	if (!d.start('LoginPrompt'))
+
+	if (!d.start || !d.start('LoginPrompt'))
 		return d;
 	
 	log('LoginPrompt detected gmcp trigger');

@@ -1,11 +1,11 @@
 /* body { height: auto; width: 99%; font-size: 11px; background: #000000 url(../images/dark-metal.jpg) 50% 50% repeat; } */
 
 @import url("../font/stylesheet.css");
-@import url(http://fonts.googleapis.com/css?family=Open+Sans);
+@import url("http://fonts.googleapis.com/css?family=Open+Sans");
 
 body {
 	outline: 0 none !important;
-	font-family: "Lucida Console","DejaVu Sans Mono","Open Sans",Arial, Helvetica,sans-serif;
+	font-family: "Lucida Console","DejaVu Sans","Open Sans",Arial,Helvetica,sans-serif;
 	font-size: 12px;
 	min-height: 100%;
 	min-width: 100%;
@@ -1104,4 +1104,8 @@ textarea.me-input {
 
 .game-blurb {
     min-height: 70px;
+}
+
+.modal-backdrop, .modal-backdrop.fade.in {
+    opacity: 0.7;
 }

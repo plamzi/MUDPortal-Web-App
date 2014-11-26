@@ -148,9 +148,7 @@ var MXP = function () {
 		t = t.replace(/\x1b\[[1-7]z<[^\x1b>]+>/g, '');  /* strip any unsupported tags */
 		t = t.replace(/<[^\x1b>]+?>\x1b\[[1-7]z/g, '');
 		t = t.replace(/\x1b\[[1-7]z/g, ''); /* strip any remaining enclosures, for now */
-		
-		console.log(t);
-		
+
 		return t;
 	};
 	
@@ -394,6 +392,11 @@ var MXP = function () {
 			Config.socket.write('');
 		
 		return false;
+	});
+	
+	j('body').on('click', function(evt) {
+		if (!j(this).is('a'))
+			j('.mxp-dropdown').remove();
 	});
 	
 	return {

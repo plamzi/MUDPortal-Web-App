@@ -120,7 +120,7 @@ var MistyBars = function(o) {
 		 Event.listen(o.listen, process);
 	else
 		 Event.listen('gmcp', process);
-	
+	/*
 	Event.listen('scrollview_ready', function(d, sv) {
 	    sv.win.button({
 	        icon: 'icon-th-list',
@@ -130,7 +130,7 @@ var MistyBars = function(o) {
 	            Config.MistyBars.win.front();
 	        }
 	    });
-	});
+	});*/
 	
 	draw();
 	

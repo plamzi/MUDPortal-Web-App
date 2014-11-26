@@ -5,49 +5,62 @@ var Modal = function(o) {
 	
 	o.backdrop = o.backdrop || 0;
 	
-	if (o.replace) {
-		if (j('.modal').length && j('.modal').is(':visible')) {
-			log('modal found in replace mode');
-			j('.modal h3').html(o.title);
-			j('.modal .modal-body').html(o.text || o.html);
-			return;
-		}
-	}
-	
-	j('.modal').modal('hide');
-	
-	j('body').append('\
-		<div class="modal '+(o['class'] || '')+' fade"><div class="modal-dialog"><div class="modal-content">\
-			<div class="modal-header">\
-				<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>\
-				<h3>' + (o.title || '') + '</h3>\
-			</div>\
-			<div class="modal-body">\
-			' + (o.info ? '<div class="alert alert-info">' + o.info + '</div>' : '') + '\
-			' + (o.error ? '<div class="alert">' + o.error + '</div>' : '') + '\
-			' + (o.text || o.html) + '\
-			</div>\
-			<div class="modal-footer">\
-				<button class="btn btn-primary kbutton dismiss" data-dismiss="modal" aria-hidden="true">OK</button>\
-			</div>\
-		</div></div></div>\
-	');
-
-	if (o.closeText || o.cancelText)
-		j('.modal .dismiss').html(o.closeText || o.cancelText);
-
-	if (o.closeable == false || o.closeable == 0)
-		j('.modal .close').remove();
-
-	if (o.css) {
-		if (o.css.width)
-			o.css['margin-left'] = -(o.css.width / 2); 
-		j('.modal').css(o.css);
-	}
-	
-	if (o.buttons) {
+	var init = function() {
 		
-		j('.modal-footer .kbutton').remove();
+		if (o.replace) {
+			if (j('.modal-plain').length && j('.modal').is(':visible')) {
+				log('modal (simple) found in replace mode');
+				j('.modal h3').html(o.title);
+				j('.modal .modal-body').html(o.text || o.html);
+				buttons();
+				links();
+				return;
+			}
+		}
+		
+		j('.modal').modal('hide');
+		
+		j('body').append('\
+			<div class="modal '+(o['class'] || '')+' modal-plain fade"><div class="modal-dialog"><div class="modal-content">\
+				<div class="modal-header">\
+					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>\
+					<h3>' + (o.title || '') + '</h3>\
+				</div>\
+				<div class="modal-body">\
+				' + (o.info ? '<div class="alert alert-info">' + o.info + '</div>' : '') + '\
+				' + (o.error ? '<div class="alert">' + o.error + '</div>' : '') + '\
+				' + (o.text || o.html) + '\
+				</div>\
+				<div class="modal-footer">\
+					<button class="btn btn-primary kbutton dismiss" data-dismiss="modal" aria-hidden="true">OK</button>\
+				</div>\
+			</div></div></div>\
+		');
+	
+		buttons();
+		links();
+		
+		if (o.closeText || o.cancelText)
+			j('.modal .dismiss').html(o.closeText || o.cancelText);
+	
+		if (o.closeable == false || o.closeable == 0)
+			j('.modal .close').remove();
+	
+		if (o.css) {
+			if (o.css.width)
+				o.css['margin-left'] = -(o.css.width / 2); 
+			j('.modal').css(o.css);
+		}
+
+		j('.modal').modal(o);
+	};
+	
+	var buttons = function() {
+		
+		if (!o.buttons)
+			return;
+			
+		j('.modal-footer .btn').remove();
 		
 		if (o.buttons.pop) {
 			for (var i = 0; i < o.buttons.length; i++) {
@@ -78,10 +91,14 @@ var Modal = function(o) {
 				n++;
 			}
 		}
-	}
+	};
 	
-	if (o.links) {
+	var links = function() {
 		
+		if (!o.links)
+			return;
+		
+		j('.modal-footer').remove('.modal-links');
 		j('.modal-footer').prepend('<div class="modal-links left" style="position: relative; z-index: 1; font-size: 11px; opacity: 0.7"></div>');
 		
 		if (o.links.pop)
@@ -101,9 +118,9 @@ var Modal = function(o) {
 				n++;
 			}
 		}
-	}
-	
-	j('.modal').modal(o);
+	};
+
+	init();
 }
 
 j('body').on('shown.bs.modal', function() {
@@ -121,7 +138,7 @@ j('body').on('hide.bs.modal', function() {
 
 Event.listen('gmcp', function(d) {
 	
-	if (!d || !d.length)
+	if (!d || !d.start)
 		return d;
 	
 	if (!d.start('Modal '))

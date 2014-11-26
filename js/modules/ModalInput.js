@@ -140,7 +140,10 @@ Event.listen('gmcp', function(d) {
 	if (!d || !d.length)
 		return d;
 	
-	if (!d.start('ModalInput'))
+	if (!d.start)
+		console.log(d);
+	
+	if (!d.start || !d.start('ModalInput'))
 		return d;
 	
 	log('ModalInput detected gmcp trigger');

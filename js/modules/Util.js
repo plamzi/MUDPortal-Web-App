@@ -1,8 +1,8 @@
-String.prototype.has = function(A) { if (!A.length) return false; return (this.indexOf(A) != -1) }
+String.prototype.has = function(a) { if (!a.length) return false; return (this.indexOf(a) != -1) };
 
-String.prototype.start = function(A) { return (this.indexOf(A) == 0) }
+String.prototype.start = function(a) { return (this.indexOf(a) == 0) };
 
-String.prototype.cap = function() {  return this.charAt(0).toUpperCase() + this.slice(1) }
+String.prototype.cap = function() {  return this.charAt(0).toUpperCase() + this.slice(1) };
 
 stringify = function(A) {
 	var cache = [];
@@ -15,15 +15,15 @@ stringify = function(A) {
 	    return v;
     });
     return val;
-}
+};
 
 function html_encode(str) {
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') ;
-}
+};
 
 function html_decode(str) {
     return str.replace(/&amp\;/g,'&').replace(/&lt\;/g,'<').replace(/&gt\;/g,'>') ;
-}
+};
 
 function addslashes(str) {
   //  discuss at: http://phpjs.org/functions/addslashes/
@@ -33,7 +33,7 @@ function addslashes(str) {
   // improved by: Nate
   // improved by: Onno Marsman
   // improved by: Brett Zamir (http://brett-zamir.me)
-  // improved by: Oskar Larsson Högfeldt (http://oskar-lh.name/)
+  // improved by: Oskar Larsson Hï¿½gfeldt (http://oskar-lh.name/)
   //    input by: Denny Wardhana
   //   example 1: addslashes("kevin's birthday");
   //   returns 1: "kevin\\'s birthday"
@@ -41,7 +41,7 @@ function addslashes(str) {
   return (str + '')
     .replace(/[\\"']/g, '\\$&')
     .replace(/\u0000/g, '\\0');
-}
+};
 
 function getSelText() {
 	

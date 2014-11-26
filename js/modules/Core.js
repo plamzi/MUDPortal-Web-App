@@ -87,6 +87,7 @@ if (!Config.device.touch)
 	j('body').tooltip({ 
 		selector: '.tip',
 		container: 'body',
+		content: function () { return j(this).prop('title'); },
 		html: true,
 		position: { my: 'center bottom', at: 'center top' }
 	});
