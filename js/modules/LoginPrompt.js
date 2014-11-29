@@ -16,7 +16,8 @@ var LoginPrompt = function(o) {
 		
 		if (!o.gmcp) {
 			o.show = new RegExp(o.show);
-	    	o.error = new RegExp(o.error);
+	    	o.err = new RegExp(o.error);
+	    	delete o.error;
 		}
 		
    		o.dismiss = new RegExp(o.dismiss);
@@ -26,10 +27,15 @@ var LoginPrompt = function(o) {
 	    log(ex);
 	}
 	
-	var shown = function() { return j('.modal #login-prompt').length; };
+	console.log(o);
+	
+	var shown = function() { return j('.modal.login-prompt').length; };
 	
 	var listen = function(d) {
 		
+		if (!d)
+			return d;
+
 		if ((line = d.match(o.show))) {
 			log('LoginPrompt listen show');
 			
@@ -42,18 +48,20 @@ var LoginPrompt = function(o) {
 				show(line[0]);
 		}
 		else
-		if ((line = d.match(o.error))) {
+		if ((line = d.match(o.err))) {
+			log('LoginPrompt listen error');
 			j(id + ' .error').html(line[0]).show();
-			return '';
+			return d;
 		}
 		else
-		if (pass && (line = d.match(o.password))) {
+		if (pass && d.match(o.password)) {
+			log('LoginPrompt password prompt detected');
 			pastuser = 1;
 			Config.socket.write(pass);
-			return '';
+			return d;
 		}
 		else
-		if (d.match(o.dismiss) && shown()) {
+		if (shown() && d.match(o.dismiss)) {
 			log('LoginPrompt dismiss detected');
 			j('.modal').modal('hide');
 			setTimeout(function() { j('#scroll-view .send').focus(); }, 500);
@@ -98,22 +106,26 @@ var LoginPrompt = function(o) {
 	};
 	
 	var show = function(t) {
-		
-		o.err =  (o.gmcp && o.error ? o.error : null);
+
+		var note = '';
+
+		if (!o.gmcp)
+			note = '<div class="error alert" style="display:none"></div>';
 		
 		o.text = '\
 		<div id="'+id.split('#')[1]+'" class="login-prompt">\
-			<div class="error alert" '+ (o.err ? '' : 'style="display:none"')+'>' + (o.err || '') + '</div>\
-			<div style="width: 100%">\
+			<div style="width: 100%; margin-top: 24px;">\
+			' + note + '\
 			<div class="left" style="margin: 0px; opacity: 0.6; padding: 0px 40px 0px 0px">\
-			<img style="width: 90px;" src="/app/images/login.png"></div>\
-			<div class="left" style="width: 200px">\
-			<form id="havoc-login-prompt" action="havoc/login">\
-			<input name="username" class="user right" type="text" tabindex="1" autocapitalize="off" autocorrect="off" size=18 placeholder="'+(o.placeholder||'')+'">\
-			<br><br>\
-			<input name="password" class="pass right" type="password" tabindex="2" autocapitalize="off" autocorrect="off" size=18 placeholder="password">\
-			</form>\
-			</div></div>\
+				<img style="width: 90px;" src="/app/images/login.png"></div>\
+				<div class="left" style="width: 200px">\
+					<form id="havoc-login-prompt" action="havoc/login">\
+					<input name="username" class="user right" type="text" tabindex="1" autocapitalize="off" autocorrect="off" size=18 placeholder="'+(o.placeholder||'')+'">\
+					<br><br>\
+					<input name="password" class="pass right" type="password" tabindex="2" autocapitalize="off" autocorrect="off" size=18 placeholder="password">\
+					</form>\
+				</div>\
+			</div>\
 		</div>';
 	
 		o.title = t || o.title || 'Please Login:';
@@ -137,9 +149,7 @@ var LoginPrompt = function(o) {
 		o.css = o.css || {
 		    width: 400
 		};
-		
-		delete o.error, delete o.err;
-		
+
 		var onOpen = function() {
 		
 			j(id + ' .user').on('keydown', function(e) {
@@ -167,7 +177,7 @@ var LoginPrompt = function(o) {
 		
 		j('body').on('shown.bs.modal', onOpen);
 		j('body').on('hide.bs.modal', onClose);
-		
+
 		new Modal(o);
 		
 		setTimeout(function() {

@@ -5,6 +5,17 @@ var Modal = function(o) {
 	
 	o.backdrop = o.backdrop || 0;
 	
+	var close = function(send) {
+		
+		console.log('Modal close');
+		
+		if (send !== true || o.abort)
+			Config.Socket.write(o.abort);
+		
+		j('.modal .mo-dismiss').off();
+		j('.modal').modal('hide');
+	};
+	
 	var init = function() {
 		
 		if (o.replace) {
@@ -23,7 +34,7 @@ var Modal = function(o) {
 		j('body').append('\
 			<div class="modal '+(o['class'] || '')+' modal-plain fade"><div class="modal-dialog"><div class="modal-content">\
 				<div class="modal-header">\
-					<button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>\
+					<button type="button" class="close mo-dismiss">×</button>\
 					<h3>' + (o.title || '') + '</h3>\
 				</div>\
 				<div class="modal-body">\
@@ -32,7 +43,7 @@ var Modal = function(o) {
 				' + (o.text || o.html) + '\
 				</div>\
 				<div class="modal-footer">\
-					<button class="btn btn-primary kbutton dismiss" data-dismiss="modal" aria-hidden="true">OK</button>\
+					<button class="btn btn-primary kbutton dismiss mo-dismiss">OK</button>\
 				</div>\
 			</div></div></div>\
 		');
@@ -46,10 +57,13 @@ var Modal = function(o) {
 		if (o.closeable == false || o.closeable == 0)
 			j('.modal .close').remove();
 	
+		j('.modal .mo-dismiss').on('click', close);
+		
 		if (o.css) {
 			if (o.css.width)
 				o.css['margin-left'] = -(o.css.width / 2); 
 			j('.modal').css(o.css);
+			//j('.modal-body').height(j('.modal').height() - j('.modal-header').height() - j('.modal-footer').height() - 4);
 		}
 
 		j('.modal').modal(o);
@@ -128,24 +142,22 @@ j('body').on('shown.bs.modal', function() {
 });
 
 j('body').on('hide.bs.modal', function() {
-	try { 
 		j('.modal .modal-body').niceScroll('destroy');
 		j('.modal a, .modal button').off('click');
 		j('.modal input, .modal textarea').off('keywdown');
-	} catch(ex) {};
-	j('.modal').remove();
+	j('.modal, .modal-backdrop').remove();
 });
 
 Event.listen('gmcp', function(d) {
-	
+
 	if (!d || !d.start)
 		return d;
-	
+
 	if (!d.start('Modal '))
 		return d;
-	
+
 	log('Modal detected gmcp trigger');
-	
+
 	try {
 		
 		var o = JSON.parse(d.match(/^[^ ]+ (.*)/)[1]);
@@ -157,7 +169,7 @@ Event.listen('gmcp', function(d) {
 			o.text = Config.mxp.translate(o.mxp);
 			o.replace = o.gmcp = 1;
 		}
-		
+
 		new Modal(o);
 	}
 	catch(ex) {

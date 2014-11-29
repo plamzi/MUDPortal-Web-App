@@ -9,9 +9,9 @@ var Config = {
 	name: param('name'),
 	
 	profile: param('profile'),
-	
+
 	width: param('width') || 860,
-			
+
 	height: param('height') || j(window).height() - 80,
 	
 	top: param('top') || 0,

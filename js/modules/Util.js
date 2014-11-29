@@ -222,9 +222,9 @@ var param = function(A) {
 		else return decodeURIComponent(results[1]);
 }
 
-var log = function(A) {
+var log = function() {
 	if (Config.debug)
-		console.log(A)
+		console.log.apply(console, arguments);
 }
 
 var dump = function(A) {

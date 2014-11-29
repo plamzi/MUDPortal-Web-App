@@ -192,9 +192,9 @@ var ControlPanel = function () {
 		
 		j('.gamepanel .scroll').niceScroll('destroy');
 		
-		t.empty();
+		var title = name + ( profile ? ': ' + profile : '');
 		
-		t.append('<div class="left game-blurb" style="padding: 4px 18px 0px 4px"><img class="game-thumb" src="'+thumb+'"></div><div class="left" style="padding-top: 4px">'+name+': '+profile+'<div style="height: 8px; clear: both"></div>'+url);
+		t.html('<div class="left game-blurb" style="padding: 4px 18px 0px 4px"><img class="game-thumb" src="'+thumb+'"></div><div class="left" style="padding-top: 4px">'+title+'<div style="height: 8px; clear: both"></div>'+url);
 		
 		if (mobile)
 			return;

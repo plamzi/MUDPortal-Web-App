@@ -310,7 +310,7 @@ var Socket = function(o) {
 			if (m && m.length) {
 				for (i = 0; i < m.length; i++) {
 					var d = m[i].substring(4, m[i].length-2);
-					log('detected msdp:');
+					log('detected & parsing msdp: ');
 					d = d
 					.replace('/\x01/g', 'MSDP_VAL')
 					.replace('/\x03/g', 'MSDP_TABLE_OPEN')
@@ -338,9 +338,9 @@ var Socket = function(o) {
 			if (m && m.length) {
 				for (i = 0; i < m.length; i++) {
 					var d = m[i].substring(3, m[i].length-2);
-					log('detected gmcp:' + d);
+					log('detected gmcp');
 					Event.fire('gmcp', d);
-					log("gmcp: "+d);
+					//console.log(d);
 					t = t.replace(m[i], '');
 				}
 			}
@@ -395,8 +395,10 @@ var Socket = function(o) {
 		
 		if (t.has('\x01') && Config.debug) {
 			log('Unhandled IAC sequence:');
+			var seq = [];
 			for (var i = 0; i < t.length; i++)
-				log(t[i] + ': ' + String.charCodeAt(t[i]));
+				seq.push(String.charCodeAt(t[i]));
+			dump(seq);
 		}
 
 		if (t.has('\x07'))
