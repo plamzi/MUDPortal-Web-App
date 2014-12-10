@@ -1,3 +1,13 @@
+body {
+	font: normal 15px/20px "Open Sans","Symbola","Code2000","DejaVu Sans","Lucida Console","Courier New", Helvetica, Arial, sans-serif !important;
+	font-family: "Open Sans","Symbola","Code2000","DejaVu Sans","Lucida Console","Courier New", Helvetica, Arial, sans-serif !important;
+	font-size: 15
+}
+
+h1, h2, h3, h4, h5, h6 {
+	font-family: "Open Sans","Symbola","Code2000","DejaVu Sans","Lucida Console","Courier New", Helvetica, Arial, sans-serif !important;
+}
+
 /* Spin around infinitely on Y axis */
 
 @-webkit-keyframes yspinner { 

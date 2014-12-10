@@ -249,7 +249,15 @@ h1, h3, a:hover, blockquote, .menu-dropdown li.active .level1, .menu-dropdown li
 	cursor: pointer;
 }
 
-button.disabled { opacity: 0.35 !important; pointer-events: none; }
+button.disabled { 
+    opacity: 0.35 !important; 
+    pointer-events: none; 
+}
+    
+.tmp-toolbar .disabled { 
+    opacity: 0.35 !important; 
+    pointer-events: inherit; 
+}
 
 .white { color: #ccc }
 
@@ -483,7 +491,7 @@ button.disabled { opacity: 0.35 !important; pointer-events: none; }
 }
 
 .modal .nice {
-	height: 360px;
+	height: 100%;
 	position: relative;
 	top: -16px;
 }

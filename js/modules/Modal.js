@@ -5,11 +5,11 @@ var Modal = function(o) {
 	
 	o.backdrop = o.backdrop || 0;
 	
-	var close = function(send) {
+	var close = function() {
 		
 		console.log('Modal close');
 		
-		if (send !== true || o.abort)
+		if (o.abort)
 			Config.Socket.write(o.abort);
 		
 		j('.modal .mo-dismiss').off();
