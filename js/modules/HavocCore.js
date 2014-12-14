@@ -128,7 +128,7 @@ var Facebook = function(a, b) {
 				version    : 'v2.1'
 			});
 		
-			Facebook('checkState');
+			//Facebook('checkState');
 			//FB.Event.subscribe('auth.login', function(resp) { Facebook('statusChange', resp); } );
 		};
 
@@ -188,15 +188,21 @@ var Facebook = function(a, b) {
 Event.listen('gmcp', function(d) {
 	
 	if (!d || !d.start || !d.start('game.info'))
-		return;
+		return d;
     
 	d = eval('(' + d.match(/[^ ]+? (.*)/)[1] + ')');
 
 	if (d.fbAppId && d.fbAppId.length) {
+		
 		log('HavocCore received Facebook app id from server');
-		Config.fbAppId = d.fbAppId;
-		Facebook('init');
+		
+		if (!Config.fbAppId) {
+			Config.fbAppId = d.fbAppId;
+			Facebook('init');
+		}
 	}
+	
+	return d;
 });
 
 

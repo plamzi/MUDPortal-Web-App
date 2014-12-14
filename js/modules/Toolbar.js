@@ -26,6 +26,12 @@ var Toolbar = function () {
 				j(this).addClass('active');
 			}
 		});
+
+		Event.listen('window_open', update);
+		Event.listen('window_close', update);
+		Event.listen('window_front', front);
+		
+		return self;
 	};
 
 	var update = function(a) {
@@ -42,11 +48,12 @@ var Toolbar = function () {
 		j('#tmp-toolbar button').removeClass('active');
 		j('#tmp-toolbar button[href="'+a+'"]').addClass('active');
 	};
-	
-	init();
-	
-	return {
+
+	var self = {
 		update: update,
-		front: front
+		front: front,
+		init: init
 	};
+	
+	return self;
 };

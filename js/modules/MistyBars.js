@@ -1,6 +1,8 @@
 var MistyBars = function(o) {
     
-    var cv, cs, cm, win, id = "#bar-window";
+    var cs = {}, win, id = "#bar-window";
+    
+    var cv = {};
     
     var o = o || {
     	title: 'MistyBars'
@@ -18,12 +20,28 @@ var MistyBars = function(o) {
 
 			var s = {};
 			s[key] = eval('(' + value + ')');
-
-			cm = exists(s['char.maxstats']) || cm;
-			cv = exists(s['char.vitals']) || cv;
+			
 			cs = exists(s['char.status']) || cs;
 			
-			redraw();
+			if (s['char.vitals']) {
+				var a = s['char.vitals'];
+				cv.hp = a.hp || cv.hp;
+				cv.mana = a.mana || cv.mana;
+				cv.moves = a.moves || cv.moves;
+			}
+
+			if (s['char.maxstats']) {
+				var a = s['char.maxstats'];
+				cv.maxhp = a.maxhp || cv.maxhp;
+				cv.maxmana = a.maxmana || cv.maxmana;
+				cv.maxmoves = a.maxmoves || cv.maxmoves;
+			};
+			
+			dump(cv);
+			
+			if (cs && cv.hp && cv.maxhp)
+				redraw();
+			
 			log('MistyBars (default): '+stringify(s));
 			
 		} catch(err) {
@@ -84,33 +102,25 @@ var MistyBars = function(o) {
 		var st = '#bar-window .';
 		var ot = '#out-window .';
 		
-		if (cv) {
-			j(st + 'hp').html(cv.hp);
-			j(st + 'mana').html(cv.mana);
-			j(st + 'moves').html(cv.moves);				
-		}
-		
-		if (cm) {
-			j(st + 'maxhp').html('/'+cm.maxhp);
-			j(st + 'maxmana').html('/'+cm.maxmana);
-			j(st + 'maxmoves').html('/'+cm.maxmoves);
-		}
-		
-		if (cv && cm) {
-			j(st + 'hpbar' ).animate({ height: 120-(120*(cv.hp / cm.maxhp)) }, 1200, 'easeInOutExpo');
-			j(st + 'manabar' ).animate({ width: w-(w*(cv.mana / cm.maxmana)) }, 1200, 'easeInOutExpo');
-			j(st + 'movebar' ).animate({ width: w-(w*(cv.moves / cm.maxmoves)) }, 1200, 'easeInOutExpo');
-			
-			j(ot + 'mini-hpbar' )  .animate({ width: parseInt((cv.hp / cm.maxhp)*100) + '%' }, 1200, 'easeInOutExpo');
-			j(ot + 'mini-manabar' ).animate({ width: parseInt((cv.mana / cm.maxmana)*100) + '%' }, 1200, 'easeInOutExpo');
-			j(ot + 'mini-movebar' ).animate({ width: parseInt((cv.moves / cm.maxmoves)*100) + '%' }, 1200, 'easeInOutExpo');			
-		}
+		j(st + 'hp').html(cv.hp);
+		j(st + 'mana').html(cv.mana);
+		j(st + 'moves').html(cv.moves);	
+		j(st + 'maxhp').html('/'+cv.maxhp);
+		j(st + 'maxmana').html('/'+cv.maxmana);
+		j(st + 'maxmoves').html('/'+cv.maxmoves);
 
-		if (cs) {
-			j(st + 'exp-label').html((cs.tnl==-1)?addCommas(cs.exp):(cs.enl - cs.tnl));
-			j(st + 'tar-label').html(cs.enemy.length?cs.enemy:"<span class='no-target'>no target</span>");
-			j(st + 'tarbar' ).animate({ width: w-(w*(cs.enemypct / 100)) }, 1200, 'easeInOutExpo');
-		}
+		j(st + 'hpbar' ).animate({ height: 120-(120*(cv.hp / cv.maxhp)) }, 1000, 'easeInOutExpo');
+		j(st + 'manabar' ).animate({ width: w-(w*(cv.mana / cv.maxmana)) }, 1000, 'easeInOutExpo');
+		j(st + 'movebar' ).animate({ width: w-(w*(cv.moves / cv.maxmoves)) }, 1000, 'easeInOutExpo');		
+		j(ot + 'mini-hpbar' )  .animate({ width: parseInt((cv.hp / cv.maxhp)*100) + '%' }, 1000, 'easeInOutExpo');
+		j(ot + 'mini-manabar' ).animate({ width: parseInt((cv.mana / cv.maxmana)*100) + '%' }, 1000, 'easeInOutExpo');
+		j(ot + 'mini-movebar' ).animate({ width: parseInt((cv.moves / cv.maxmoves)*100) + '%' }, 1000, 'easeInOutExpo');			
+
+		var tnl = cs.enl - cs.tnl;
+		j(st + 'exp-label').html(isNaN(tnl) ? ( addCommas(cs.exp) || '') : addCommas(tnl));
+		if (cs.enemy && cs.enemy.length)
+			j(st + 'tar-label').html("<span class='no-target'>" + cs.enemy + "</span>");
+		j(st + 'tarbar' ).animate({ width: w-(w*(cs.enemypct / 100)) }, 1200, 'easeInOutExpo');
 	};
 
 	if (o.process)

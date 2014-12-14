@@ -41,7 +41,7 @@ var Modal = function(o) {
 				' + (o.info ? '<div class="alert alert-info">' + o.info + '</div>' : '') + '\
 				' + (o.error ? '<div class="alert">' + o.error + '</div>' : '') + '\
 				' + (o.text || o.html) + '\
-				</div>\
+				<br><br></div>\
 				<div class="modal-footer">\
 					<button class="btn btn-primary kbutton dismiss mo-dismiss">OK</button>\
 				</div>\

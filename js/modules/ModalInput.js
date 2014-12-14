@@ -56,7 +56,7 @@ var ModalEditor = function(o) {
 				' + (o.intro ? '<div class="intro">' + o.intro + '</div><br>' : '') + '\
 					<' + (o.tag || 'textarea') + (o.type ? ' type="'+o.type+'" ' : ' ') + 'class="me-input" spellcheck="false" autocapitalize="off" autocorrect="off" \
 					placeholder="' + (o.placeholder || '') + '" ' + (o.tag ? 'value="' + (o.text || '') + '"' : '') + '">' + (o.tag ? '' : (o.text || o.html || '')) + (o.tag ? '' : '</textarea>') + '\
-			</div>\
+			<br><br></div>\
 			<div class="modal-footer">\
 				<button class="btn btn-primary kbutton me-dismiss">' + (o.closeText || 'Cancel') + '</button>\
 				<button class="btn btn-primary kbutton me-send">' + (o.sendText || 'Send' ) + '</button>\

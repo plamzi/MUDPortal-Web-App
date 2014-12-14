@@ -15,6 +15,9 @@ var ScrollView = function(o) {
 		scrollback: 30 * 1000
 	};
 
+	if (Config.kong)
+		o.css.height = j(window).height() - 3; 
+
 	var id = '#scroll-view';
 	
 	o.local = (Config.getSetting('echo') == null || Config.getSetting('echo') == 1);	  
@@ -183,7 +186,7 @@ var ScrollView = function(o) {
 		
 		j(id).on('click', '.multiline', multi);
 		
-		if (!Config.embed)
+		if (!Config.embed && !Config.kong)
 			j(id + ' .send').autocomplete({
 				appendTo: "body",
 				minLength: 2,
@@ -365,10 +368,10 @@ var ScrollView = function(o) {
 	
 	var title = function(t) {
 		win.title(t);
-		document.title = param('name') || t;
+		document.title = t || param('name');
 	}
 	
-	title(param('host') + ':' + param('port'));
+	title(param('name') || (param('host') + ':' + param('port')));
 	
 	var echoOff = function() { o.echo = 0 }
 	var echoOn = function() { o.echo = 1 }

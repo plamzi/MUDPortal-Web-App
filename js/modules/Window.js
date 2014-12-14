@@ -4,8 +4,9 @@ var Window = function(o) {
 	var minZ = 100;
 	var view_id = Config.view;
 	var drag = ( !Config.device.mobile && !param('kong') && !param('gui') && !param('embed') && !o.nodrag && !Config.nodrag );
-	var doresize = ( !o.noresize && !param('embed') );
-	var save = ( window.user && user.id && Config.host && !param('kong') && !param('gui') && !param('embed') );
+	var doresize = (!o.noresize && !param('embed') && !Config.nodrag);
+	var save = ( window.user && user.id && Config.host && !Config.kong && !param('gui') && !param('embed') );
+	var handle = !o.handle && !o.transparent;
 	
 	o = o || {
 		id: '#scroll-view',
@@ -17,6 +18,8 @@ var Window = function(o) {
 		width: 380
 	};
 	
+	o.closeable = o.closeable || drag;
+	
 	o.tabs = o.tabs || [];
 	
 	if (Config.device.touch || param('gui'))
@@ -25,7 +28,7 @@ var Window = function(o) {
 	var button = function(o) {
 		j(id + ' .toolbar').prepend('<i class="icon '+o.icon+' tip" title="'+o.title+'"></i>');
 		j(id + ' .'+o.icon).click(o.click); 
-	}
+	};
 	
 	var title = function(t) {
 		if (t) {
@@ -34,20 +37,47 @@ var Window = function(o) {
 		}
 		else
 			return o.title;
-	}
+	};
 	
 	var resize = function() {
+
+		if (o.onResize)
+			o.onResize();
 		
 		var h = j(id).height();
 		
-		if (j(id + ' .handle').length)
+		if (handle)
 			h -= 18;
+
+		j(id + ' .content').height(h).width(j(id).width());
 		
-		j(id + ' .content').height(h);
-		j(id + ' .tab-content').height(h - 40);
-		j(id + ' .tab-pane').height(h - 40);
+		j(id + ' .tab-content').height( j(id).height() - j(id + ' .nav-tabs').height() );
 		
-		renice();	
+		j(id + ' .tab-pane').each(function() { 
+			
+			j(this).css({
+				height: j(this).parent().height(),
+				width: j(this).parent().width(),
+			});
+			
+			j(this).find('.content').css({
+				height: j(this).parent().height(),
+				width: j(this).parent().width(),
+			});
+		});
+		
+		/* docked windows */
+		/*
+		j(id + ' .window').each(function() {
+			
+			j(this).css({
+				width: j(this).parent().width(),
+				height: j(this).parent().height(),
+			});
+			
+			j(this).get(0).win.resize(); 
+		});*/
+		renice();
 	}
 	
 	var renice = function() {
@@ -70,7 +100,7 @@ var Window = function(o) {
 			</div>\
 		');
 		
-		if (!o.handle && !o.transparent) {
+		if (handle) {
 			j(o.id).prepend('\
 			<div class="handle">\
 					<div class="title" style="width: 100%; text-align: center; text-overflow: ellipsis;">'+(o.title||'&nbsp;')+'</div>\
@@ -130,7 +160,8 @@ var Window = function(o) {
 		
 		draggable();
 
-		j(id + ' .handle').dblclick(hide);
+		if (Config.Toolbar)
+			j(id + ' .handle').dblclick(hide);
 		
 		j(id).css({
 			'overflow':'hidden',
@@ -180,15 +211,17 @@ var Window = function(o) {
 			j(id + ' .content').height(j(id).height() - 18);
 	}
 	
-	var draggable = function() {
+	var draggable = function(cancel) {
 	
 		try {
 			j(id).draggable('destroy');
 		} catch(ex) {}
 	
-		if (!drag)
+		if (cancel === 0 || !drag) {
+			j(id + ' .ui-resizable-handle').remove();
 			return;
-			
+		}
+		
 		j(id).draggable({
 			/*stack: ".ui-group",*/
 			handle: o.handle,
@@ -225,10 +258,11 @@ var Window = function(o) {
 		position = j(id).position();
 		width = j(id).width();
 		height = j(id).height();
+		var p = j(id).parent();
 		
 		j(id).css({
-			width: j(window).width(),
-			height: j(window).height(),
+			width: j(p).width(),
+			height: j(p).height(),
 			top: 0,
 			left: 0
 		});
@@ -446,7 +480,7 @@ var Window = function(o) {
 			draggable();
 		}
 				
-		var html = '<li><a class="kbutton" data-toggle="tab" href="#tab-'+i+'">'+t.name+'</a></li>';
+		var html = '<li><a class="kbutton ' + (t.id ? t.id.replace('#', '') : '') + '" data-toggle="tab" href="#tab-'+i+'">'+t.name+'</a></li>';
 		
 		if (!t.after && !t.before)
 			j(o.id + ' .nav-tabs').append(html);
@@ -456,31 +490,61 @@ var Window = function(o) {
 		else
 			j(html).insertAfter(j(o.id + ' .nav-tabs a:contains("'+t.after+'")').parent());
 		
-		j(o.id + ' .tab-content').append('<div id="tab-'+i+'" class="'+(t['class']||'')+' tab-pane nice'+(i==0?' active':'')+'">'+(t.html||'')+'</div>');
+		j(o.id + ' .tab-content').append('<div id="tab-'+i+'" class="'+( t['class'] || '')+' tab-pane'+(i==0?' active':'')+'">'+(t.html||'')+'</div>');
+
+		if (!t.html.has('iframe'))
+			j(o.id + ' #tab-'+i).addClass('nice').niceScroll({ 
+				cursorborder: 'none',
+				//touchbehavior: 1,
+				height: j(o.id + ' #tab-'+i).height()
+			});
 		
 		resize();
 		
-		j(o.id + ' #tab-'+i).niceScroll({ 
-			cursorborder: 'none',
-			touchbehavior: 1,
-			height: j(o.id + ' #tab-'+i).height()
+		return o.id + ' #tab-' + i;
+	};
+	
+	var dock = function(t) {
+		
+		var target = tab(t);
+		console.log(target);
+		
+		j(t.id).detach().appendTo(target).css({
+			left: 0,
+			right: 'auto',
+			top: 0,
+			bottom: 'auto',
+			height: '100%',
+			width: '100%',
+			position: 'relative',
+			zIndex: 'inherit',
+			borderWidth: 0
 		});
 		
-		return o.id + ' #tab-' + i;
-	}
+		var w = j(t.id).get(0).win;
+		w.draggable(0);
+		w.resize();
+		
+		j(t.id).find('.icon-remove').remove();
+		
+		return target;
+	};
 	
 	init(o);
 	
 	var self = {
+		id: o.id,
 		title: title,
 		button: button,
 		tab: tab,
+		dock: dock,
 		front: front,
 		maximize: maximize,
 		show: show,
 		hide: hide,
 		maximized: maximized,
-		resize: resize
+		resize: resize,
+		draggable: draggable
 	}
 	
 	j(o.id).get(0).win = self;

@@ -14,15 +14,21 @@ var ChatterBox = function(o) {
 	o = o || {
 		id: '#chat-window',
 		title: 'ChatterBox',
-		css: {
-			width: 400,
-			height: 400,
-			top: 0,
-			left: Config.width
-		},
 		tabs: []
 	};
+	
+	o.css = o.css || {
+		width: 400,
+		height: 400,
+		top: 0,
+		left: Config.width
+	};
 
+	if (Config.kong) {
+		o.css.width = 398;
+		o.css.height = j(window).height() - 143;
+	}
+	
 	/* Create a window that doesn't fade when other windows are selected (nofade) */
 	var win = new Window({
 		id: o.id,
@@ -52,7 +58,6 @@ var ChatterBox = function(o) {
 				//log(o.tabs[i].re);
 			}
 			catch(ex) { log(ex); }
-				
 	}
 
 	//j(o.id + ' .chat-tabs').sortable();
@@ -78,7 +83,7 @@ var ChatterBox = function(o) {
 					text = match[0].replace(o.tabs[i].re, o.tabs[i].replace, 'gi');
 
 				if (o.tabs[i].time)
-					text = '<span style="color: DarkGray; opacity: 0.6">'+j.format.date(new Date(), 'hh:mm:ss') + '</span> ' + text;
+					text = '<span style="color: DarkGray; opacity: 0.6">'+j.format.date(new Date(), 'HH:mm') + '</span> ' + text;
 				
 				text = text.replace(/([^"'])(http?:\/\/[^\s\x1b"']+)/g,'$1<a href="$2" target="_blank">$2</a>');
 				text = '<div id="c">' + text +  '</div>';
@@ -123,9 +128,8 @@ var ChatterBox = function(o) {
 	};
    	
    	Config.ChatterBox = self;
-	setTimeout(function() {
-		Event.fire('chatterbox_ready', self);
-   	}, 500);
+   	
+	setTimeout(function() { Event.fire('chatterbox_ready', self); }, 500);
 	
    	return self;
 };

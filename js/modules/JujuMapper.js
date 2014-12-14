@@ -8,10 +8,15 @@ var JujuMapper = function(o) {
 		css: {
 			width: 400, 
 			height: 400, 
-			top: 400, 
-			right: j(window).width()-400 
+			bottom: 0,
+			left: Config.width
 		}
 	};
+	
+	if (Config.kong) {
+		o.css.width = 398;
+		o.css.height = 240;
+	}
 	
 	o.loadURL = o.loadURL||'/index.php?option=com_portal&task=get_map&host='+Config.host+'&port='+Config.port;
 	o.saveURL = '/index.php?option=com_portal&task=save_map&host='+Config.host+'&port='+Config.port;
@@ -385,21 +390,24 @@ var JujuMapper = function(o) {
 		//myGlow = glow("myGlow").rgb("#aaa").stdDeviation(1);
 		
 		//if (j.browser.safari && !j.browser.chrome)
-		    nice = j(o.container).niceScroll({ 
-				cursorborder: 'none',
-				//boxzoom: 1,
-				touchbehavior: 1,
-				cursorwidth: 0
-			});
 		
-		j(o.container).scroll(function() {
+		j(o.container)
+		.addClass('nice')
+		.scroll(function() {
 		    clearTimeout(j.data(this, 'scrollTimer'));
 		    j.data(this, 'scrollTimer', setTimeout(function() {
 		    	log('Mapper: stopped scrolling');
 		    	updateVisible();
 		    }, 200));
 		});
-
+		
+	    nice = j(o.container).niceScroll({ 
+			cursorborder: 'none',
+			//boxzoom: 1,
+			touchbehavior: 1,
+			cursorwidth: 0
+		});
+	
 		W = j(o.container).width(), H = j(o.container).height();
 		
 		if (o.onLoad)
@@ -1377,7 +1385,7 @@ var JujuMapper = function(o) {
 
 		log('Mapper.process');
 		
-		if (!d.start('room.info'))
+		if (!d.start || !d.start('room.info'))
 		    return d;
 		
 		try {
@@ -1584,29 +1592,31 @@ var JujuMapper = function(o) {
 	});
 	
 	if (!o.clean) {
+		
 	    var win = new Window({
 	        id: id,
-	        closeable: o.closeable||1,
-	        transparent: o.transparent||0,
+	        closeable: o.closeable || 0,
+	        transparent: o.transparent || 0,
 	        //max: 1,
 	        css: o.css,
 	        'class': 'mapper nofade',
 	        title: 'Juju Mapper',
 	        onResize: function() {
-	        	nice.resize();
+	        	!nice || nice.resize();
 	        	go(at);
 	        }
 	    });
 	    
-	    win.button({
-	    	icon: 'icon-edit',
-	    	title: 'Start mapping / editing.',
-	    	click: function() {
-	    		j(id + ' .icon-edit').toggleClass('on');
-	    		j(id + ' .toolbar .icon-save').toggle();
-	    		context();
-	    	}
-	    });
+	    if (!Config.kong)
+		    win.button({
+		    	icon: 'icon-edit',
+		    	title: 'Start mapping / editing.',
+		    	click: function() {
+		    		j(id + ' .icon-edit').toggleClass('on');
+		    		j(id + ' .toolbar .icon-save').toggle();
+		    		context();
+		    	}
+		    });
 	    
 	    j(id + ' .toolbar .icon-save').addClass('save').toggle();
 	    
@@ -1639,8 +1649,8 @@ var JujuMapper = function(o) {
 	else
 		Event.listen('gmcp', process);
 	
-	Event.listen('scrollview_ready', function(d, sv) {
-		if (!j('#scroll-view .toolbar').html().has('mapper window'))
+	if (!Config.Toolbar && !Config.kong)
+		Event.listen('scrollview_ready', function(d, sv) {
 		    sv.win.button({
 		        icon: 'icon-location-arrow',
 		        title: 'Toggle the mapper window.',
@@ -1654,10 +1664,11 @@ var JujuMapper = function(o) {
 		        	return false;
 		        }
 		    });
-	});
+		});
 	
 	return {
 		process: process,
-		init: init
+		init: init,
+		go: function() { go(at); }
 	};
 };

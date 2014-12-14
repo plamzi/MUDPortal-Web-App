@@ -5,7 +5,7 @@
 
 body {
 	outline: 0 none !important;
-	font-family: "Lucida Console","DejaVu Sans","Open Sans",Arial,Helvetica,sans-serif;
+	font-family: "Open Sans","Lucida Console","DejaVu Sans",Arial,Helvetica,sans-serif;
 	font-size: 12px;
 	min-height: 100%;
 	min-width: 100%;
@@ -274,6 +274,10 @@ button.disabled {
 
 .app #c { clear: both }
 
+.app .out {
+    font-family: "Lucida Console","DejaVu Sans","Open Sans",Arial,Helvetica,sans-serif;
+}
+
 .app .out a, .app .freeze a {
 	color: inherit;
 	text-decoration: underline;	
@@ -326,14 +330,14 @@ button.disabled {
 
 .app .window .tab-content {
 	margin: 0px auto;
-	padding: 0px 0px 8px 0px;
+	padding: 0px;
 	height: 100%;
 }
 
 .app .window .tab-pane {
 	margin: 0px auto;
-	padding: 4px;
-	width: 94%;
+	padding: 0px;
+	overflow: hidden;
 }
 
 .app .handle .toolbar {
@@ -353,6 +357,15 @@ button.disabled {
 
 .app .window .inbar:hover {
     cursor: move
+}
+
+.app .window .tab-pane iframe {
+    position: relative;
+    margin: 0px auto;
+    display: block;
+    margin-top: 50%;
+    top: -32%;
+    overflow: hidden; 
 }
 
 .app .out, .app .freeze {
@@ -739,21 +752,18 @@ p:focus, ul:focus, div:focus {
 
 .map { scrolling: none; overflow: hidden; border: none; width: 100%; height: 96%; float: bottom }
 
-.mapper {
+#mapper {
     display: block;
     position: relative;
     height: 100%;
     width: 100%;
     text-align: center;
-    left: 0;
-    bottom: 0;
-    top: 20;
     padding: 0;
     margin: 0 auto;
     overflow: hidden;
 }
 
-.mapper #map {
+#mapper #map {
     padding: 0;
     margin: 0 auto;
     position: relative;
@@ -761,13 +771,13 @@ p:focus, ul:focus, div:focus {
     left: 0px;
 }
   
-.mapper .line {
+#mapper .line {
     stroke-width: 1px;
     opacity: 0.12;
     fill: none;
 }
 
-.mapper .arrow {
+#mapper .arrow {
 	opacity: 1;
 	stroke-width: 1px;
 	stroke: White;
@@ -775,7 +785,7 @@ p:focus, ul:focus, div:focus {
     fill: White;
 }
 
-.mapper .room {
+#mapper .room {
     opacity: 0.2;
     fill: #ccc;
     fill-opacity: 0.3;
@@ -783,7 +793,7 @@ p:focus, ul:focus, div:focus {
     stroke-color: #F2C931;
 }
 
-.mapper .tag {
+#mapper .tag {
 	font-size: 11px;
 	fill: inherit;
 	color: inherit;
@@ -793,52 +803,52 @@ p:focus, ul:focus, div:focus {
 	pointer-events: none;
 }
 
-.mapper body {
+#mapper body {
 	background-image: none;
 } 
 
-.mapper .line.active {
+#mapper .line.active {
     opacity: 0.5;
 }
 
-.mapper .line.road {
+#mapper .line.road {
     opacity: 0.3;
 }
 
-.mapper .room.road {
+#mapper .room.road {
 	opacity: 0.4;
 }
 
-.mapper .room.active {
+#mapper .room.active {
 	opacity: 0.9;
 }
 
-.mapper .room.seeall {
+#mapper .room.seeall {
 	opacity: 0.4;
 }
 
-.mapper .tag.active {
+#mapper .tag.active {
 	opacity: 0.8;
 }
 
-.mapper .room:hover {
+#mapper .room:hover {
 	cursor: pointer
 }
 
-.mapper .room.selected {
+#mapper .room.selected {
 	width: 5px;
 	stroke-width: 2px;
 	stroke-color: White;
 }
 
-.mapper .room.active.in {
+#mapper .room.active.in {
     opacity: 1;
     fill: #fff !important;
     fill-opacity: 0.8;
     stroke-width: 2px;
 }
 
-.mapper .context-top {
+#mapper .context-top {
 	position: absolute;
 	top: 16px;
 	left: 0px;
@@ -847,16 +857,16 @@ p:focus, ul:focus, div:focus {
 	background-color: rgba(0, 0, 0, 0.9);
 }
 
-.mapper .context li {
+#mapper .context li {
 	display: inline-block;
 }
 
-.mapper .dir {
+#mapper .dir {
 	width: 10px;
 	height: 10px;
 }
 
-.mapper .on {
+#mapper .on {
 	color: White;	
 }
 

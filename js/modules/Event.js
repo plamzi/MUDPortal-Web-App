@@ -50,11 +50,8 @@ var Event = {
 		//else
 			//log('Event.fire: '+event);
 
-		for (var i = 0; i < this.q[event].length; i++) {
+		for (var i = 0; i < this.q[event].length; i++)
 			data = this.q[event][i](data, caller);
-			if (!data)
-				break;
-		}
 		
 		return data;
 	},

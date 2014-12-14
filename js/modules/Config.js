@@ -30,6 +30,8 @@ var Config = {
 	
 	embed: param('embed') || 0,
 	
+	kong: param('kong'),
+	
 	collapse: [],
 	
 	dev: window.location.search.has('dev') || 0,

@@ -114,7 +114,8 @@ var MXP = function () {
 		t = t.replace(/<a(|[^]+?)>([^]+?)<\/a>/gi, '\x1b<a target="_blank" $1\x1b>$2\x1b<\/a\x1b>');
 		
 		/* conform send links with no href */
-		t = t.replace(/(<send )("[^]+?)>/gi, '$1 href=$2>');
+		t = t.replace(/(<send )([^"]+?)>/gi, '$1 href=$2>');
+		t = t.replace(/send href=""/gi, 'send href="#"');
 		
 		/* <send> simple & single-choice tag: turn into links, escape &lt, &gt */
 		t = t.replace(/<send(|[^>]+)>(.+?)<\/send>/gi, '\x1b<a class="mxp tip"$1\x1b>$2\x1b<\/a\x1b>');
@@ -383,13 +384,16 @@ var MXP = function () {
 		var href = j(this).attr('href');
 		
 		if (href) {
-			 if (href.has('|'))
+			if (href.has('|'))
 				multi(href, this);
-			 else
+			else
+			if (href == '#')
+				Config.socket.write('');
+			else
 				Config.socket.write(href);
 		}
 		else
-			Config.socket.write('');
+			Config.socket.write(j(this).text());
 		
 		return false;
 	});

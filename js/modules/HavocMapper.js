@@ -102,85 +102,7 @@ var Mapper = function(o) {
 	var setPortals = function(p) {
 		j(o.id + ' #portals').empty();
 	};
-	
-	var init = function() {
-		
-		loadMaps();
 
-		myimages.forEach(function(i) {
-	        j('<img/>')[0].src = i;
-	    });
-		
-		map = o.id + ' .content';
-		img = map + ' #map';
-		marker = map + ' #marker';
-
-		o.css = o.css || {
-			height: 400,
-			width: 400,
-			top: 400, 
-			left: Config.width
-		};
-	
-		win = new Window({
-			id: o.id,
-			title: 'HavocMapper',
-			'class': 'nofade nofront',
-			handle: '.inbar',
-			css: o.css,
-			onResize: function() {
-	        	go(at);
-	        }
-		});
-
-		j(map).html('\
-			<img id="map" class="pointer" style="max-width: none; max-height: none; z-index: 1; position: absolute" oncontextmenu="return false;">\
-			<img id="marker" class="tip" style="width: 54px; height: 54px; z-index: 2; position: absolute; display: none" src="/aaralon/images/brush.png"></img>\
-		');
-
-		j(o.id).prepend('<div class="inbar" style="position: absolute; top: 0px; left: 0px; z-index: 2; height: 20px; width: 100%; text-align: center;">\
-			<div class="title" style="white-space: nowrap; text-overflow: ellipsis; font-size: ' + (o.mini?10:13) + 'px;"></div>\
-		</div>');
-
-		loadImage(path + 'Calandor.jpg', img);
-		
-		j(o.id + ' .ui-resizable-handle').css('zIndex', 3);
-		
-		nice = j(map).addClass('nice').niceScroll({
-			//touchbehavior: 1,
-			cursorborder: 'none',
-			zindex: 3,
-			cursorwidth: 8,
-			railoffset: { top: -4, left: -4 }
-		});
-		
-		if (o.mini)
-			j(map).addClass('frame-left')
-		
-		j(document).on('click', img, clicked);
-	};
-
-	var home = function(at) {
-		if (!param('gui'))
-			return;
-		if (at.zone == 'Calandor' && at.x == 78 && at.y == 29 && j('#bar #home').text().has('recall'))
-			j('#bar #home').html('<img src="/bedlam/art/cache/ui/cmdrent@2x.png"> home');
-		else
-			if (j('#bar #home').text().has('home'))
-				j('#bar #home').html('<img src="/bedlam/art/cache/ui/cmdrent@2x.png"> recall');
-	};
-	
-	var getpos = function(at) {
-		
-		var oddX = at.x % 2;
-		
-		mX = xOffset + ((tile * 0.75) * at.x) - (tile / 2);
-		mY = (tile * at.y) - (tile / 2) + (!oddX ? yOffset : 0); 
-		
-		log('mX: '+mX+ ' mY: '+mY);
-		return { left: mX - 4, top: mY - 5 };
-	};
-	
 	var go = function(at) {
 
 		at = at || was;
@@ -222,7 +144,7 @@ var Mapper = function(o) {
 
 		log('mapper.go: scrolled to: x' + j(map).scrollLeft() + ' y' + j(map).scrollTop());
 		
-		nice.resize();
+		!nice || nice.resize();
 		
 		if (!o.mini) {
 			//animate(at);
@@ -232,11 +154,99 @@ var Mapper = function(o) {
 		return self;
 	};
 	
+	var init = function() {
+		
+		loadMaps();
+
+		myimages.forEach(function(i) {
+	        j('<img/>')[0].src = i;
+	    });
+		
+		map = o.id + ' .content';
+		img = map + ' #map';
+		marker = map + ' #marker';
+
+		o.css = o.css || {
+			height: 400,
+			width: 400,
+			top: 400, 
+			left: Config.width
+		};
+	
+		win = new Window({
+			id: o.id,
+			title: 'HavocMapper',
+			'class': 'nofade nofront',
+			handle: '.inbar',
+			css: o.css,
+			onResize: function() {
+	        	go(was);
+	        }
+		});
+
+		j(map).html('\
+			<img id="map" class="pointer" style="max-width: none; max-height: none; z-index: 1; position: absolute" oncontextmenu="return false;">\
+			<img id="marker" class="tip" style="width: 54px; height: 54px; z-index: 2; position: absolute; display: none" src="/aaralon/images/brush.png"></img>\
+		');
+
+		j(o.id).prepend('<div class="inbar" style="position: absolute; top: 0px; left: 0px; z-index: 2; height: 20px; width: 100%; text-align: center;">\
+			<div class="title" style="white-space: nowrap; text-overflow: ellipsis; font-size: ' + (o.mini?10:13) + 'px;"></div>\
+		</div>');
+
+		loadImage(path + 'Calandor.jpg', img);
+		
+		j(o.id + ' .ui-resizable-handle').css('zIndex', 3);
+		
+		nice = j(map).addClass('nice').niceScroll({
+			//touchbehavior: 1,
+			cursorborder: 'none',
+			zindex: 3,
+			cursorwidth: 8,
+			railoffset: { top: -4, left: -4 }
+		});
+		
+		//if (o.mini)
+			//j(map).addClass('frame-left')
+		
+		j(document).on('click', img, clicked);
+	};
+
+	var home = function(at) {
+		
+		if (!param('gui'))
+			return;
+		
+		if (at.zone == 'Calandor' && at.x == 78 && at.y == 29 && j('#bar #home').text().has('recall'))
+			j('#bar #home').html('<img src="/bedlam/art/cache/ui/cmdrent@2x.png"> home');
+		else
+			if (j('#bar #home').text().has('home'))
+				j('#bar #home').html('<img src="/bedlam/art/cache/ui/cmdrent@2x.png"> recall');
+	};
+	
+	var getpos = function(at) {
+		
+		if (!at.x)
+			return { left: 0, top: 0 };
+		
+		var oddX = at.x % 2;
+		
+		mX = xOffset + ((tile * 0.75) * at.x) - (tile / 2);
+		mY = (tile * at.y) - (tile / 2) + (!oddX ? yOffset : 0); 
+		
+		log('mX: '+mX+ ' mY: '+mY);
+		return { left: mX - 4, top: mY - 5 };
+	};
+	
 	var update = function(d) {
 		
+		if (!d || !d.start)
+			return d;
+
 		try {
 			if (d.start('ch.at ')) {
-				log('HavocMapper.update at');
+				
+				log('Havoc' + (o.mini ? '(mini)': '')+ 'Mapper.update at');
+				
 				at = eval('(' + d.match(/[^]+? (.*)/)[1] + ')');
 				go(at);
 			}
@@ -247,7 +257,7 @@ var Mapper = function(o) {
 				setTitle(t);
 				animate(t);
 				if (t.portals)
-					sertPortals(t.portals);
+					setPortals(t.portals);
 			}
 		} 
 		catch(err) {
@@ -282,8 +292,8 @@ var Mapper = function(o) {
 	
 	var self = {
 		update: update,
-		go: go,
-		win: win
+		win: win,
+		go: go
 	};
 	
 	return self;
@@ -292,18 +302,4 @@ var Mapper = function(o) {
 if (param('havoc') && param('map') != '0') {
 	Config.Map = new Mapper({ id: '#havoc-mapper' });
 	Event.listen('gmcp', Config.Map.update);
-}
-
-if (param('havoc') && param('gui')) {
-	Config.MiniMap = new Mapper({ 
-		mini: 1,
-		id: '#mini-mapper',
-		css: {
-			top: 0,
-			width: 400,
-			left: '100%',
-			height: '50%'
-		}
-	});	
-	Event.listen('gmcp', Config.MiniMap.update);
 }

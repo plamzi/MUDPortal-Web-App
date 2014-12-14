@@ -70,17 +70,19 @@ if (!Config.nocore) {
 			scrollback: 40 * 1000
 		});
 
-		if (!Config.embed && !Config.device.mobile && !param('kong')) {
-			Config.Toolbar = new Toolbar();
+		if (!Config.embed && !Config.device.mobile && !Config.kong) {
+			Config.Toolbar = new Toolbar().init();
 			Config.Toolbar.update();
-			Event.listen('window_open', Config.Toolbar.update);
-			Event.listen('window_close', Config.Toolbar.update);
-			Event.listen('window_front', Config.Toolbar.front);
 		}
 	}
 	
-	if (window.user && user.guest && !Config.device.touch)
-		j('.app').prepend('<a class="right" style="opacity:0.5;margin-right: 8px" href="/component/comprofiler/login" target="_self"><i class="icon-sun"></i> login</a>');
+	if (window.user && user.guest && !Config.kong && !Config.device.touch)
+		j('.app').prepend('<a class="right" style="opacity:0.5;margin-right: 8px" \
+		href="/component/comprofiler/login" target="_self">\
+		<i class="icon-sun"></i> login</a>');
+	
+	if (Config.kong)
+		Config.ScrollView.title('Bedlam');
 }
 
 if (!Config.device.touch)

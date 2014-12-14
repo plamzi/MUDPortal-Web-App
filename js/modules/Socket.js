@@ -251,10 +251,11 @@ var Socket = function(o) {
 	var prepare = function(t, force) {
 
 		/* prevent split oob data */
-		if (t.match(/\xff\xfa[^\xff\xf0\x01]+$/)) {
+		if (t.match(/\xff\xfa[^\xff\xf0\x01]+$/) && !force) {
 			log('protocol split protection waiting for more input.');
 			buff = t;
 			//log(buff);
+			setTimeout(process, 1000, 1);
 			return;
 		}
 

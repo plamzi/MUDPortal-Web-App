@@ -2,8 +2,14 @@ var LoginPrompt = function(o) {
 
 	var user, line, pastuser = 0;
 	var id = o.id = o.id || '#login-prompt';
-	var pass = param('kongregate_game_auth_token') || null;
+	var pass = null;
 	o['class'] = 'login-prompt';
+	
+	if (Config.kong) {
+		var kong_id = param('kongregate_user_id');
+		var kong_token = param('kongregate_game_auth_token');
+		pass = kong_token;
+	}
 	
 	log('LoginPrompt.init: gmcp is ' + o.gmcp);
 	
@@ -28,7 +34,7 @@ var LoginPrompt = function(o) {
 	}
 	
 	console.log(o);
-	
+	//http://www.mudportal.com/play?host=mud.playbedlam.com&port=9000&kong=1&debug=1&DO_NOT_SHARE_THIS_LINK=1&kongregate_username=plamzi&kongregate_user_id=11788532&kongregate_game_auth_token=938f1a6e57b4b5b431a09b5fab3adf4cf5c13b8534631d85ac745319684b29fc&kongregate_game_id=178502&kongregate_host=http%3A%2F%2Fwww.kongregate.com&kongregate_game_url=http%3A%2F%2Fwww.kongregate.com%2Fgames%2Fplamzi%2Fbedlam&kongregate_api_host=http%3A%2F%2Fapi.kongregate.com&kongregate_channel_id=1418331791494&kongregate_api_path=http%3A%2F%2Fchat.kongregate.com%2Fflash%2FAPI_AS3_0256891c32c4fb4b4d8435be3d168b6a.swf&kongregate_ansible_path=chat.kongregate.com%2Fflash%2Fansible_53a9bad8291f1abfc5c9ec32e8158497.swf&kongregate_preview=true&kongregate_game_version=1418330402&kongregate_language=en&preview=true&kongregate_split_treatments=none&kongregate=true&kongregate_svid=0372d740-d87b-464a-811b-91f08d710661&kongregate_analytics_mode&KEEP_THIS_DATA_PRIVATE=1
 	var shown = function() { return j('.modal.login-prompt').length; };
 	
 	var listen = function(d) {
@@ -37,11 +43,14 @@ var LoginPrompt = function(o) {
 			return d;
 
 		if ((line = d.match(o.show))) {
+			
 			log('LoginPrompt listen show');
 			
-			if (param('kongregate_user_id'))
-				Config.socket.write(param('kongregate_user_id'));
-			else
+			if (Config.kong) {
+				Config.socket.write(kong_id);
+				return d.replace(line, '');
+			}
+			
 			if (param('token'))
 				Config.socket.write(param('token'));
 			else
@@ -49,14 +58,22 @@ var LoginPrompt = function(o) {
 		}
 		else
 		if ((line = d.match(o.err))) {
+			
 			log('LoginPrompt listen error');
 			j(id + ' .error').html(line[0]).show();
 			return d;
 		}
 		else
 		if (pass && d.match(o.password)) {
+			
 			log('LoginPrompt password prompt detected');
 			pastuser = 1;
+			
+			if (Config.kong) {
+				Config.socket.write(pass);
+				return '';
+			}
+			
 			Config.socket.write(pass);
 			return d;
 		}
@@ -65,6 +82,19 @@ var LoginPrompt = function(o) {
 			log('LoginPrompt dismiss detected');
 			j('.modal').modal('hide');
 			setTimeout(function() { j('#scroll-view .send').focus(); }, 500);
+		}
+		else
+		if (Config.kong && d.has('Username available. Would you like to create')) {
+			Config.socket.write('y;' + kong_token + ';' + kong_token);
+			return '';
+		}
+		else 
+		if (Config.kong && d.has('Give me a password for')) {
+			return '';
+		}
+		else 
+		if (Config.kong && d.has('Please retype password')) {
+			return '';
 		}
 		
 		return d;
@@ -138,7 +168,7 @@ var LoginPrompt = function(o) {
 		    click: go
 		}];
 		
-		if (window.user.guest && !Config.device.touch && !param('kong') && !param('gui') && !param('havoc'))
+		if (window.user.guest && !Config.device.touch && !Config.kong && !param('gui') && !param('havoc'))
 			o.buttons.unshift({
                 text: '<i class="icon-sun"></i> Portal Sign-In',
     		    click: function() {
