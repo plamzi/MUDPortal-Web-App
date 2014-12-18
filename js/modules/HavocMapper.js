@@ -300,6 +300,6 @@ var Mapper = function(o) {
 };
 
 if (param('havoc') && param('map') != '0') {
-	Config.Map = new Mapper({ id: '#havoc-mapper' });
-	Event.listen('gmcp', Config.Map.update);
+	Config.Mapper = new Mapper({ id: '#havoc-mapper' });
+	Event.listen('gmcp', Config.Mapper.update);
 }

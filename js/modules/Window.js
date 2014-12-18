@@ -55,14 +55,19 @@ var Window = function(o) {
 		
 		j(id + ' .tab-pane').each(function() { 
 			
+			var w = j(this).parent().width(), h = j(this).parent().height(), ch = h;
+			
+			if (j(this).find('.footer'))
+				ch -= (j(this).find('.footer').height() + 4);
+					
 			j(this).css({
-				height: j(this).parent().height(),
-				width: j(this).parent().width(),
+				height: h,
+				width: w,
 			});
 			
 			j(this).find('.content').css({
-				height: j(this).parent().height(),
-				width: j(this).parent().width(),
+				height: ch,
+				width: w,
 			});
 		});
 		
@@ -492,8 +497,8 @@ var Window = function(o) {
 		
 		j(o.id + ' .tab-content').append('<div id="tab-'+i+'" class="'+( t['class'] || '')+' tab-pane'+(i==0?' active':'')+'">'+(t.html||'')+'</div>');
 
-		if (!t.html.has('iframe'))
-			j(o.id + ' #tab-'+i).addClass('nice').niceScroll({ 
+		if (t.scroll)
+			j(o.id + ' #tab-'+i).addClass('nice').niceScroll({
 				cursorborder: 'none',
 				//touchbehavior: 1,
 				height: j(o.id + ' #tab-'+i).height()
@@ -507,7 +512,7 @@ var Window = function(o) {
 	var dock = function(t) {
 		
 		var target = tab(t);
-		console.log(target);
+		console.log('request to dock window: ' + t.id + ' -> ' + target);
 		
 		j(t.id).detach().appendTo(target).css({
 			left: 0,

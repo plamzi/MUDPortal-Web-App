@@ -49,17 +49,66 @@ var ChatterBox = function(o) {
 	/* Build the tabs from the options. See Bedlam-ChatterBox.js */
 	for (var i = 0; i < o.tabs.length; i++) {
 		
-		if (!o.tabs[i].target)
-			win.tab(o.tabs[i]);
+		var t = o.tabs[i];
 		
-		if (o.tabs[i].match)
+		if (t.channels) {
+			
+			t.html = t.html || '<div class="content"></div>';
+			t.html += '<div class="footer dropup" style="position: absolute; bottom: 0px; height: 34px">\
+				<a href="#" class="channel dropdown-toggle kbutton" data-toggle="dropdown" style="margin: 0px; width: 140px; position: relative; top: -2px"><span class="text">' + t.channels[0] + '</span> <i class="icon icon-caret-down"></i></a>\
+				<ul class="dropdown-menu" role="menu">'
+				for (var i = 0; i < t.channels.length; i++)
+					t.html += '<li><a href="#" data="' + t.channels[i] + '">' + t.channels[i] + '</a></li>';
+			t.html += '</ul><input class="send" type="text" style="margin-left: 6px; margin-top: 2px; width: 260px" placeholder="type your chat message"></div>';
+		}
+		
+		if (!t.target) {
+			
+			var target = win.tab(t);
+
+			if (t.channels) {
+				
+				j(target + ' .content').addClass('nice').niceScroll({ 
+					cursorborder: 'none'
+				});
+				
+				j(target).on('click', 'ul a', function(e) {
+					
+					j(target + ' .dropdown-toggle .text').html(j(this).attr('data'));
+					
+					try {
+						j(target + ' .dropdown-toggle').dropdown('toggle');
+					}
+					catch(ex) {}
+					
+					e.stopPropagation();
+					e.preventDefault();
+				});
+				
+				j(target).on('keydown', 'input', function(e) {
+					
+					if (e.which == 13 && j(this).val().length) {
+						
+						var prefix = j(target + ' .dropdown-toggle .text').text();
+						Config.Socket.write(prefix + ' ' + j(this).val());
+						j(this).val('');
+						
+						e.stopPropagation();
+						e.preventDefault();
+					}
+				});
+			}
+		}
+		
+		if (t.match) {
 			try {
-				o.tabs[i].re = new RegExp(o.tabs[i].match, 'gi');
+				t.re = new RegExp(t.match, 'gi');
 				//log(o.tabs[i].re);
 			}
 			catch(ex) { log(ex); }
+		}
 	}
-
+	
 	//j(o.id + ' .chat-tabs').sortable();
 
 	var process = function(msg) {
@@ -87,23 +136,25 @@ var ChatterBox = function(o) {
 				
 				text = text.replace(/([^"'])(http?:\/\/[^\s\x1b"']+)/g,'$1<a href="$2" target="_blank">$2</a>');
 				text = '<div id="c">' + text +  '</div>';
-				
+
 				if (o.tabs[i].target) {
+					
 					var t;
-					if ((t = o.tabs.index('name', o.tabs[i].target)) > -1) {
-						j(o.id + ' #tab-'+t).append(text);
-						j(o.id + ' #tab-'+t).scrollTop(j(o.id + ' #tab-'+t)[0].scrollHeight);
-					}
+					
+					if ((t = o.tabs.index('name', o.tabs[i].target)) > -1)
+						var target = j(o.id + ' #tab-' + t + ' .content').length ? j(o.id + ' #tab-' + t + ' .content') : j(o.id + ' #tab-'+t);
 				}
-				else {
-					j(o.id + ' #tab-'+i).append(text);
-					j(o.id + ' #tab-'+i).scrollTop(j(o.id + ' #tab-'+i)[0].scrollHeight);
-				}
+				else
+					var target = j(o.id + ' #tab-' + i + ' .content').length ? j(o.id + ' #tab-' + i + ' .content') : j(o.id + ' #tab-'+t);
+				
+				target.append(text);
+				target.scrollTop(target[0].scrollHeight);
 				
 				if (o.tabs[i].gag)/* we're hiding the output so triggers can still work */ 
 					msg = msg.replace(match[0], '\033<span style="display: none"\033>'+match[0]+'\033</span\033>');
 			}
 		}
+		
 		return msg;
 	};
 	

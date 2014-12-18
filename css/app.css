@@ -362,10 +362,17 @@ button.disabled {
 .app .window .tab-pane iframe {
     position: relative;
     margin: 0px auto;
-    display: block;
-    margin-top: 50%;
-    top: -32%;
-    overflow: hidden; 
+    display: inherit;
+    top: 8px;
+    overflow: hidden;
+}
+
+.app .window .tab-items {
+    white-space: pre-wrap;
+}
+
+.app .window .tab-pane .content {
+    top: auto;
 }
 
 .app .out, .app .freeze {

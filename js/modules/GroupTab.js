@@ -7,8 +7,15 @@ var GroupTab = function(o) {
 	var path = '/app/images/group-';
 
 	var init = function() {
-        log('GroupTab: init');
-	    o.id = Config.ChatterBox.tab({ name: o.title||'group', before: 'chat' });
+        
+		log('GroupTab: init');
+	    
+        o.id = Config.ChatterBox.tab({ 
+	    	name: o.title || 'group', 
+	    	before: 'chat',
+	    	scroll: 1
+	    });
+	    
 	    j(o.id).append('<div class="list" style="clear:both; min-height: 30px; height: 100%; position: relative"></div>');
 	   // j('.chat-tabs a:first').click();
 	    j(o.id + ' .group-member').click(function() {

@@ -1383,10 +1383,10 @@ var JujuMapper = function(o) {
 	
 	var process = function(d) {
 
-		log('Mapper.process');
-		
 		if (!d.start || !d.start('room.info'))
 		    return d;
+
+		log('JujuMapper.process');
 		
 		try {
 			var data = d.match(/^[^ ]+ (.*)/)[1];

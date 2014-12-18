@@ -431,8 +431,8 @@ var Socket = function(o) {
 
 		//console.log('before_display: '+t);
 
-		t = t.replace(/\r/g,'');
-		t = t.replace(/\n/g,'<br>');
+		//t = t.replace(/\r/g,'');
+		//t = t.replace(/\n/g,'\r\n');
 		
 		t = Event.fire('before_display', t);
 

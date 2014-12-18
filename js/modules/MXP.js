@@ -249,13 +249,18 @@ var MXP = function () {
 						j('a[href="#tab-'+n+'"]').remove;
 					}
 					else
-					if (eof || j('.tab-' + n).length)
-						j('.tab-' + n).empty();
+					if (eof || j('.tab-' + n).length) {
+						if (j('.tab-' + n + ' .content').length)
+							j('.tab-' + n + ' .content').empty();
+						else
+							j('.tab-' + n).empty();
+					}
 					else 
 					if (action == 'open')
 						Config[p].win.tab({
 							name: n,
-							'class': 'tab-'+n
+							'class': 'tab-'+n,
+							scroll: 1
 						});
 				}
 				else if (!p && action == 'open') {
@@ -307,10 +312,16 @@ var MXP = function () {
 				msg = Event.fire('mxp_dest', msg, n);
 				
 				if (j('.tab-'+n).length) {
-					var my = j('.tab-'+n);
-					my.append(msg).scrollTop(my.prop('scrollHeight'));
-					j(my).parent().parent().find('a[href="#'+j(my).attr('id')+'"]').tab('show');
-					j(my).closest('.window').get(0).win.resize();
+					
+					var my = j('.tab-'+n + ' .content').length ? j('.tab-'+n + ' .content') : j('.tab-'+n);
+					
+					my.append(msg);
+					my.parent().parent().find('a[href="#'+j(my).attr('id')+'"]').tab('show');
+					
+					if (my.hasClass('nice')) {
+						my.getNiceScroll().resize();
+						my.scrollTop(my.prop('scrollHeight'));
+					}
 				}
 				else
 				if (j('#' + n).length) {
@@ -321,8 +332,12 @@ var MXP = function () {
 					}
 					
 					var my = j('#' + n + ' .content');
-					my.append(msg).scrollTop(my.prop('scrollHeight'));
-					j('#' + n).get(0).win.resize();
+					my.append(msg);
+					
+					if (my.hasClass('nice')) {
+						my.getNiceScroll().resize();
+						my.scrollTop(my.prop('scrollHeight'));
+					}
 				}
 				else
 				if (n == 'Modal') {

@@ -110,17 +110,31 @@ var MistyBars = function(o) {
 		j(st + 'maxmoves').html('/'+cv.maxmoves);
 
 		j(st + 'hpbar' ).animate({ height: 120-(120*(cv.hp / cv.maxhp)) }, 1000, 'easeInOutExpo');
-		j(st + 'manabar' ).animate({ width: w-(w*(cv.mana / cv.maxmana)) }, 1000, 'easeInOutExpo');
-		j(st + 'movebar' ).animate({ width: w-(w*(cv.moves / cv.maxmoves)) }, 1000, 'easeInOutExpo');		
+		j(st + 'manabar' ).animate({ width: w - (w * (cv.mana / cv.maxmana)) }, 1000, 'easeInOutExpo');
+		j(st + 'movebar' ).animate({ width: w - (w * (cv.moves / cv.maxmoves)) }, 1000, 'easeInOutExpo');	
+		
 		j(ot + 'mini-hpbar' )  .animate({ width: parseInt((cv.hp / cv.maxhp)*100) + '%' }, 1000, 'easeInOutExpo');
 		j(ot + 'mini-manabar' ).animate({ width: parseInt((cv.mana / cv.maxmana)*100) + '%' }, 1000, 'easeInOutExpo');
 		j(ot + 'mini-movebar' ).animate({ width: parseInt((cv.moves / cv.maxmoves)*100) + '%' }, 1000, 'easeInOutExpo');			
 
-		var tnl = cs.enl - cs.tnl;
-		j(st + 'exp-label').html(isNaN(tnl) ? ( addCommas(cs.exp) || '') : addCommas(tnl));
+		
 		if (cs.enemy && cs.enemy.length)
 			j(st + 'tar-label').html("<span class='no-target'>" + cs.enemy + "</span>");
-		j(st + 'tarbar' ).animate({ width: w-(w*(cs.enemypct / 100)) }, 1200, 'easeInOutExpo');
+		
+		if (cs.enemypct == -1)
+			j(st + 'tar-label').empty();
+		
+		j(st + 'tarbar' ).animate({ width: w - ( w * (cs.enemypct / 100)) }, 1200, 'easeInOutExpo');
+		
+		if (!cs.exp)
+			return;
+
+		var tnl = (cs.tnl != -1) ? cs.tnl : null;
+		
+		j(st + 'exp-label').html(tnl ? addCommas(cs.tnl) + '/' + addCommas(cs.enl) : addCommas(cs.exp));
+		
+		if (tnl)
+			j(st + 'expbar' ).animate({ width: w - (w * (cs.tnl / cs.enl)) }, 1000, 'easeInOutExpo');
 	};
 
 	if (o.process)
