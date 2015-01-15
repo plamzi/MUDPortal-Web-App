@@ -34,9 +34,13 @@ var u = require('util');
 var net = require('net');
 var http = require('http');
 var zlib = require('zlib');
+var fs = require('fs');
+
 var ug = require("uglify-js");
 var ws = require('websocket').server;
-var fs = require('fs');
+var iconv = require('iconv-lite');
+iconv.extendNodeEncodings();
+
 var first = (typeof srv == 'undefined');
 
 process.chdir(__dirname);
@@ -296,26 +300,26 @@ srv = {
 	sendTTYPE: function (s, msg) {
 		if (msg) {
 			var p = srv.prt;
-			s.ts.send(p.WILL_TTYPE);
-				s.ts.send(new Buffer([p.IAC, p.SB, p.TTYPE, p.IS]));
+			s.ts.write(p.WILL_TTYPE);
+				s.ts.write(new Buffer([p.IAC, p.SB, p.TTYPE, p.IS]));
 					s.ts.send(msg);
-				s.ts.send(new Buffer([p.IAC, p.SE]));
+				s.ts.write(new Buffer([p.IAC, p.SE]));
 			srv.log(msg);
 		}
 	},
 	
 	sendGMCP: function (s, msg) {
-		s.ts.send(srv.prt.START);
-			s.ts.send(msg);
-		s.ts.send(srv.prt.STOP);
+		s.ts.write(srv.prt.START);
+			s.ts.write(msg);
+		s.ts.write(srv.prt.STOP);
 	},
 
 	sendMXP: function (s, msg) {
 		var p = srv.prt;
-		s.ts.send(new Buffer([p.ESC]));
-			s.ts.send('[1z' + msg);
-		s.ts.send(new Buffer([p.ESC]));
-			s.ts.send('[7z');	
+		s.ts.write(new Buffer([p.ESC]));
+			s.ts.write('[1z' + msg);
+		s.ts.write(new Buffer([p.ESC]));
+			s.ts.write('[7z');	
 	},
 	
 	sendMSDP: function (s, msdp) {
@@ -326,27 +330,27 @@ srv = {
 		if (!msdp.key || !msdp.val)
 			return;
 		
-		s.ts.send(new Buffer([p.IAC, p.SB, p.MSDP, p.MSDP_VAR]));
-		s.ts.send(msdp.key);
+		s.ts.write(new Buffer([p.IAC, p.SB, p.MSDP, p.MSDP_VAR]));
+		s.ts.write(msdp.key);
 		
 		msdp.val = msdp.val.pop?msdp.val:[msdp.val];
 		
 		for (var i = 0; i < msdp.val.length; i++) {
-			s.ts.send(new Buffer([p.MSDP_VAL]));
-				s.ts.send(msdp.val[i]);
+			s.ts.write(new Buffer([p.MSDP_VAL]));
+				s.ts.write(msdp.val[i]);
 		}
 		
-		s.ts.send(new Buffer([p.IAC, p.SE]));
+		s.ts.write(new Buffer([p.IAC, p.SE]));
 	},
 	
 	sendMSDPPair: function (s, key, val) {
 		var p = srv.prt;
 		srv.log('sendMSDPPair '+key+'='+val, s);
-		s.ts.send(new Buffer([p.IAC, p.SB, p.MSDP, p.MSDP_VAR]));
-			s.ts.send(key);
-		s.ts.send(new Buffer([p.MSDP_VAL]));
-			s.ts.send(val);
-		s.ts.send(new Buffer([p.IAC, p.SE]));
+		s.ts.write(new Buffer([p.IAC, p.SB, p.MSDP, p.MSDP_VAR]));
+			s.ts.write(key);
+		s.ts.write(new Buffer([p.MSDP_VAL]));
+			s.ts.write(val);
+		s.ts.write(new Buffer([p.IAC, p.SE]));
 	},
 	
 	initT: function(so) {
@@ -371,12 +375,23 @@ srv = {
 		//s.ts.setEncoding('binary');
 		
 		s.ts.send = function(data) {
+			
+/*		
 			if (s.debug) {
 				var raw = [];
 					for (var i = 0; i < data.length; i++)
 						raw.push(u.format('%d', data[i]));
 				//srv.log('write bin: '+raw, s);
 			}
+*/
+			
+			try {
+				data = iconv.encode(data, 'latin1');
+				//console.log(data);
+			} catch(ex) {
+				console.log(ex);
+			}
+
 			s.ts.write(data);
 		};
 		
@@ -445,7 +460,7 @@ srv = {
 				if (data[i] == p.IAC && data[i+1] == p.WILL && data[i+2] == p.MCCP2) {
 					setTimeout(function() {
 						srv.log("IAC DO MCCP2", s);
-						s.ts.send(p.DO_MCCP);
+						s.ts.write(p.DO_MCCP);
 					}, 6000);
 				}
 				else
@@ -490,9 +505,9 @@ srv = {
 					srv.log('IAC DO GMCP', s);
 					
 					if (data[i+1] == p.DO)
-						s.ts.send(p.WILL_GMCP);
+						s.ts.write(p.WILL_GMCP);
 					else
-						s.ts.send(p.DO_GMCP);
+						s.ts.write(p.DO_GMCP);
 					
 					srv.log('IAC DO GMCP <- IAC WILL GMCP', s);
 					
@@ -516,7 +531,7 @@ srv = {
 		if (!s.msdp_negotiated) {
 			for (i = 0; i < data.length; i++)	{
 				if (data[i] == p.IAC && data[i+1] == p.WILL && data[i+2] == p.MSDP) {
-					s.ts.send(p.DO_MSDP);
+					s.ts.write(p.DO_MSDP);
 					srv.log("IAC WILL MSDP <- IAC DO MSDP", s);
 					srv.sendMSDPPair(s, "CLIENT_ID", s.client||"mudportal.com");
 					srv.sendMSDPPair(s, "CLIENT_VERSION", "1.0");
@@ -532,13 +547,13 @@ srv = {
 		if (!s.mxp_negotiated) {
 			for (i = 0; i < data.length; i++)	{
 				if (data[i] == p.IAC && data[i+1] == p.DO && data[i+2] == p.MXP) {
-					s.ts.send(new Buffer([p.IAC, p.WILL, p.MXP]));
+					s.ts.write(new Buffer([p.IAC, p.WILL, p.MXP]));
 					srv.log("IAC DO MXP <- IAC WILL MXP", s);
 					s.mxp_negotiated = 1;
 				}
 				else
 				if (data[i] == p.IAC && data[i+1] == p.WILL && data[i+2] == p.MXP) {
-					s.ts.send(new Buffer([p.IAC, p.DO, p.MXP]));
+					s.ts.write(new Buffer([p.IAC, p.DO, p.MXP]));
 					srv.log("IAC WILL MXP <- IAC DO MXP", s);
 					s.mxp_negotiated = 1;
 				}
@@ -548,7 +563,7 @@ srv = {
 		if (!s.new_negotiated) {
 			for (i = 0; i < data.length; i++)	{
 				if (data[i] == p.IAC && data[i+1] == p.DO && data[i+2] == p.NEW) {
-					s.ts.send(new Buffer([p.IAC, p.WILL, p.NEW]));
+					s.ts.write(new Buffer([p.IAC, p.WILL, p.NEW]));
 					srv.log("IAC WILL NEW-ENV", s);
 					s.new_negotiated = 1;
 				}
@@ -558,11 +573,11 @@ srv = {
 		if (!s.new_handshake) {
 			for (i = 0; i < data.length; i++)	{
 				if (data[i] == p.IAC && data[i+1] == p.SB && data[i+2] == p.NEW && data[i+3] == p.REQUEST) {
-					s.ts.send(new Buffer([p.IAC, p.SB, p.NEW, p.IS, p.IS]));
-					s.ts.send('IPADDRESS');
-					s.ts.send(new Buffer([p.REQUEST]));
-					s.ts.send(s.remoteAddress);
-					s.ts.send(new Buffer([p.IAC, p.SE]));
+					s.ts.write(new Buffer([p.IAC, p.SB, p.NEW, p.IS, p.IS]));
+					s.ts.write('IPADDRESS');
+					s.ts.write(new Buffer([p.REQUEST]));
+					s.ts.write(s.remoteAddress);
+					s.ts.write(new Buffer([p.IAC, p.SE]));
 					srv.log("IAC NEW-ENV IP VAR SEND");
 					s.new_handshake = 1;
 				}
@@ -582,7 +597,7 @@ srv = {
 		if (!s.sga_negotiated) {
 			for (i = 0; i < data.length; i++)	{
 				if (data[i] == p.IAC && data[i+1] == p.WILL && data[i+2] == p.SGA) {
-					s.ts.send(new Buffer([p.IAC, p.WONT, p.SGA]));
+					s.ts.write(new Buffer([p.IAC, p.WONT, p.SGA]));
 					srv.log("IAC WILL SGA <- IAC WONT SGA");
 					s.sga_negotiated = 1;
 				}
@@ -592,7 +607,7 @@ srv = {
 		if (!s.naws_negotiated) {
 			for (i = 0; i < data.length; i++)	{
 				if (data[i] == p.IAC && data[i+1] == p.WILL && data[i+2] == p.NAWS) {
-					s.ts.send(new Buffer([p.IAC, p.WONT, p.NAWS]));
+					s.ts.write(new Buffer([p.IAC, p.WONT, p.NAWS]));
 					srv.log("IAC WILL SGA <- IAC WONT NAWS");
 					s.naws_negotiated = 1;
 				}
@@ -603,12 +618,12 @@ srv = {
 			for (i = 0; i < data.length; i++) {
 				
 				if (data[i] == p.IAC && data[i+1] == p.DO && data[i+2] == p.CHARSET) {
-					s.ts.send(p.WILL_CHARSET);
+					s.ts.write(p.WILL_CHARSET);
 					srv.log("IAC DO CHARSET <- IAC WILL CHARSET", s);
 				}
 				
 				if (data[i] == p.IAC && data[i+1] == p.SB && data[i+2] == p.CHARSET) {
-					s.ts.send(p.ACCEPT_UTF8);
+					s.ts.write(p.ACCEPT_UTF8);
 					srv.log("UTF-8 negotiated", s);
 					s.utf8_negotiated = 1;
 				}
