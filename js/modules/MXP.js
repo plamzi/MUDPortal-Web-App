@@ -3,6 +3,7 @@
  * This plugin is part of the core so it's always available on the app page
  *  
 */
+
 var MXP = function () {
 	
 	var mxp = 0, elements = [], entities = [];
@@ -118,7 +119,6 @@ var MXP = function () {
 		
 		/* <send> simple & single-choice tag: turn into links, escape &lt, &gt */
 		t = t.replace(/<send(|[^>]+)>(.+?)<\/send>/gi, '\x1b<a class="mxp tip"$1\x1b>$2\x1b<\/a\x1b>');
-        //t = t.replace(/<send(|[^>]+)>(.+?)<\/send>/gi, '\x1b<a class="mxp tip"$1\x1b>$2\x1b<\/a\x1b>');
 		
 		t = t.replace(/hint="([^|]+?)"/gi, 'title="$1"');
 
@@ -360,15 +360,16 @@ var MXP = function () {
 		
 		return t;
 	};
-	 
+	
 	var multi = function(o, src) {
-		console.log(o);
+		
 		var o = o.split('|'), hint = [];
-        
-		if (j(src).attr('hint') && j(src).attr('hint').has('|')) {
-            hint = j(src).attr('hint').split('|');
-        }
-
+		
+		log(o);
+		
+		if (j(src).attr('hint') && j(src).attr('hint').has('|'))
+			hint = j(src).attr('hint').split('|');
+			
 		j('.mxp-dropdown').remove();
 		
 		j('body').append('<ul class="mxp-dropdown"></ul>');
