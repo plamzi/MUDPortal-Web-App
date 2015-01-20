@@ -375,7 +375,7 @@ var MXP = function () {
 		j('body').append('<ul class="mxp-dropdown"></ul>');
 		
 		for (var i = 0; i < o.length; i++)
-			j('.mxp-dropdown').append('<li><a class="mxp" href="'+o[i]+'">' + (hint[i] || o[i]).replace(/[0-9]/g, '') + '</a>');
+			j('.mxp-dropdown').append('<li><a class="mxp" href="'+o[i]+'">' + (hint[i+1] || o[i]).replace(/[0-9]/g, '') + '</a>');
 		
 		j('.mxp-dropdown').css({
 			top: j(src).offset().top,
