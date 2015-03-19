@@ -126,11 +126,23 @@ var ControlPanel = function () {
 		}
 	}
 	
+	var loadChat = function() {
+	
+		j(id + ' .gamelist').prepend('<div class="chatlist"><a class="chat-list folder" data="chat-link"><i class="icon-folder-open-alt"></i> Portal Chat<br></a></div>');
+		var chan = ['Lobby', 'Players', 'Devs'];
+		
+		for (var i = 0; i < chan.length; i++)
+			j(id + ' .chatlist').append('<a class="chat-link" data="'+chan[i]+'"><i class="icon-comment-alt"></i> '+chan[i]+'<br></a>');
+	}
+	
 	var loadGamelist = function() {
+		
 		j(id + ' .gamelist').empty();
-			loadSiteList();
-			loadMudconnectList();
-			loadProfiles();
+		
+		loadSiteList();
+		loadMudconnectList();
+		loadProfiles();
+		loadChat();
 	}
 
 	loadGamelist();
@@ -307,7 +319,7 @@ var ControlPanel = function () {
 	j(id).on('click', 'a.macro-add', function() {
 		var t = j(this).parent().find('.scroll');
 		t.append('<div><input type="text" style="width: 100px" placeholder="macro name"> <input type="text" placeholder="commands to send"> \
-				<i class="icon-unchecked" title="Enable or disable this macro."></i> \
+				<i class="icon-check" title="Enable or disable this macro."></i> \
 				<i class="icon-star-empty" title="Favorite macros with no arguments will appear as Quick Buttons."></i> \
 				<i class="icon-remove-sign" title="Delete this macro."></i></div>');
 		j('.gamepanel .scroll').getNiceScroll().resize();
@@ -317,7 +329,7 @@ var ControlPanel = function () {
 	j(id).on('click', 'a.trigger-add', function() {
 		var t = j(this).parent().find('.scroll');
 		t.append('<div><input type="text" style="width: 100px" placeholder="trigger phrase"> <input type="text" placeholder="response"> \
-				<i class="icon-unchecked" title="Enable or disable this trigger."></i> \
+				<i class="icon-check" title="Enable or disable this trigger."></i> \
 				<i class="icon-remove-sign" title="Delete this trigger."></i></div>');
 		j('.gamepanel .scroll').getNiceScroll().resize();
 		t.scrollTop(t[0].scrollHeight);
@@ -511,7 +523,7 @@ var ControlPanel = function () {
 	});
 	
 	j(id).on('click', '.pdel', function() {
-		var name = j(this).parent().attr('name');
+		var name = j(this).parent().attr('profile');
 		delete user.pref.profiles[name];
 		j.post('?option=com_portal&task=set_pref', { pref: stringify(user.pref) });
 		loadGamelist();
@@ -608,16 +620,10 @@ var ControlPanel = function () {
 			
 			chat.send(stringify({
 				chat: 1,
-				name: user.username||'Guest',
+				name: user.username || 'Guest',
 				channel: 'op',
 				msg: 'joined chat.'
 			}));
-			
-			j(id + ' .gamelist').prepend('<div class="chatlist"><a class="chat-list folder" data="chat-link"><i class="icon-folder-open-alt"></i> Portal Chat<br></a></div>');
-			var chan = ['Lobby', 'Players', 'Devs'];
-			
-			for (var i = 0; i < chan.length; i++)
-				j(id + ' .chatlist').append('<a class="chat-link" data="'+chan[i]+'"><i class="icon-comment-alt"></i> '+chan[i]+'<br></a>');
 		}
 		else {
 			dump(c);

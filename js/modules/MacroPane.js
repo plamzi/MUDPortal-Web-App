@@ -10,7 +10,7 @@ var MacroPane = function(o) {
 	var host = Config.host;
 	var port = Config.port;
 	var G = user.pref.sitelist, P = user.pref.profiles, g, p, gMacros, pMacros;
-
+	var buttons;
 	var vars;
 	var first = 1;
 	
@@ -47,7 +47,7 @@ var MacroPane = function(o) {
 	var pane = function() {
 
 		if (Config.device.mobile)
-		 return;
+			return;
 		 
 		j(id).remove();
 		
@@ -87,7 +87,7 @@ var MacroPane = function(o) {
 		for (var i = 0; i < buttons.length; i++) {
 			if (buttons[i][0][0] == '$' && buttons[i][2]) {
 				var re = new RegExp('\\'+buttons[i][0], 'g');
-				//log(re);
+				log(re);
 				msg = msg.replace(re, buttons[i][1]);
 				log('MacroPane: var replacement: '+stringify(buttons[i]));
 				log(msg);
@@ -102,42 +102,42 @@ var MacroPane = function(o) {
 		if (Config.nomacros)
 			return msg;
 		
+		log('MacroPane.sub: ' + buttons.length);
+		
 		for (var b = 0; b < buttons.length; b++) {
 			
 			var cmd = buttons[b][0], sub = buttons[b][1];
 
-				if (buttons[b][2] && msg.has(cmd)) {	
-					
-					if (!sub.has('$')) {
-						var re = new RegExp('^'+cmd, 'g');
-						msg = msg.replace(re, sub);
-						return msg;
-					}
-					
-					if (sub.has('$*')) {
-						var arg = msg.split(' ');
-						arg.shift();
-						msg = sub.replace('$*', arg.join(' '));
-						return msg;
-					}
-					
-					if (!sub.has(' '))
-						continue;
-
-					var arg = msg.split(' ');
-					
-					if (arg[0] != cmd)
-						continue;
-					
-					for (var i = 1; i < arg.length; i++) {
-						sub = sub.replace('$'+i, arg[i], 'g');
-						console.log(sub);
-					}
-					
-					return vars(sub);
-					
+			if (buttons[b][2] && msg.has(cmd)) {	
+				
+				if (!sub.has('$')) {
+					var re = new RegExp('^'+cmd, 'g');
+					msg = msg.replace(re, sub);
+					return msg;
 				}
-			
+				
+				if (sub.has('$*')) {
+					var arg = msg.split(' ');
+					arg.shift();
+					msg = sub.replace('$*', arg.join(' '));
+					return msg;
+				}
+				
+				if (!sub.has(' '))
+					continue;
+
+				var arg = msg.split(' ');
+				
+				if (arg[0] != cmd)
+					continue;
+				
+				for (var i = 1; i < arg.length; i++) {
+					sub = sub.replace('$'+i, arg[i], 'g');
+					console.log(sub);
+				}
+				
+				return vars(sub);
+			}
 		}
 		
 		return msg;
