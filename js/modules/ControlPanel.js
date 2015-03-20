@@ -176,7 +176,8 @@ var ControlPanel = function () {
 	j(id).on('click', ' .game-link, .profile-link', function(e) {
 		
 		e.stopPropagation();
-
+		mychannel = null;
+		
 		j('.gamelist a').removeClass('game-link-selected');
 		j(this).addClass('game-link-selected');
 		
@@ -200,7 +201,7 @@ var ControlPanel = function () {
 		url = "<a href=\""+url+"\" class=\"button-primary\">play</a>";
 		
 		if (profile)
-			t.attr('profile', '1');
+			t.attr('profile', profile);
 		
 		j('.gamepanel .scroll').niceScroll('destroy');
 		
@@ -213,12 +214,12 @@ var ControlPanel = function () {
 		
 		if (profile)
 			t.append('<br>\
-					<a class="kbutton save right tip" title="Save your preferences for this game or game profile."><i class="icon-save"></i> save</a></div>\
+					<a class="kbutton save right tip" title="Save your preferences for this profile."><i class="icon-save"></i> save</a></div>\
 					<a class="kbutton pdel right tip" title="Delete this game profile."><i class="icon-remove"></i> delete</a></div>\
 					<div style="clear: both"></div>');
 		else
 			t.append('<br>\
-			<a class="kbutton save right tip" title="Save your preferences for this game or game profile."><i class="icon-save"></i> save</a></div>\
+			<a class="kbutton save right tip" title="Save your preferences for this game."><i class="icon-save"></i> save</a></div>\
 			<a class="kbutton clone right tip" title="Create a profile for this game."><i class="icon-copy"></i> profile</a></div>\
 			<div style="clear: both"></div>');
 				
@@ -242,26 +243,30 @@ var ControlPanel = function () {
 
 		if (window.user.id && pref) {
 	
+			if (pref.profiles && pref.profiles[profile])
+				var G = pref.profiles[profile];
+			else
 			if (pref.sitelist && pref.sitelist[name])
 				var G = pref.sitelist[name];
-			else if (pref.profiles && pref.profiles[name])
-				var G = pref.profiles[name];
 			
 			if (G) {
 				var t = j('#control-panel #macros .scroll');
 				for (var n = 0; n < G.macros.length; n++) {
 					var i = G.macros[n];
-					t.append('<div><input type="text" style="width: 100px" placeholder="macro name" value="'+i[0]+'"> \
-							<input type="text" placeholder="commands to send" value="'+i[1]+'"> \
-					<i class="icon-'+(i[2]?'check':'unchecked')+'"></i> <i class="icon-star'+(i[3]?'':'-empty')+'"></i> \
+					t.append('<div>\
+					<input type="text" style="width: 100px" placeholder="macro name" value="'+i[0]+'"> \
+					<input type="text" placeholder="commands to send" value="'+i[1]+'"> \
+					<i class="icon-'+(i[2]?'check':'unchecked')+'"></i> \
+					<i class="icon-star'+(i[3]?'':'-empty')+'"></i> \
 					<i class="icon-remove-sign"></i></div>');
 				}
 
 				var t = j('#control-panel #triggers .scroll');
 				for (var n = 0; n < G.triggers.length; n++) {
 					var i = G.triggers[n];
-					t.append('<div><input type="text" style="width: 100px" placeholder="trigger phrase" value="'+i[0]+'"> \
-							<input type="text" placeholder="response" value="'+i[1]+'"> \
+					t.append('<div>\
+					<input type="text" style="width: 100px" placeholder="trigger phrase" value="'+i[0]+'"> \
+					<input type="text" placeholder="response" value="'+i[1]+'"> \
 					<i class="icon-'+(i[2]?'check':'unchecked')+'"></i> \
 					<i class="icon-remove-sign"></i></div>');
 				}
@@ -415,22 +420,26 @@ var ControlPanel = function () {
 		}
 				
 		j(id+' #macros .scroll div').each(function() {
+			
 			var a, b;
+			
 			if (!(a = j(this).find('input:first').val()))
 				return;
+			
 			if (!(b = j(this).find('input:nth-child(2)').val()))
 				return;
 			
 			c = j(this).find('.icon-check').length;
 			d = j(this).find('.icon-star').length;
 			
-			if (profile) {
+			if (profile)
 				pref.profiles[profile].macros.push([a, b, c, d]);
-			}
 			else
 				pref.sitelist[name].macros.push([a, b, c, d]);
 		});
 
+		dump(pref.profiles[profile].macros);
+		
 		j(id+' #triggers .scroll div').each(function() {
 			var a, b;
 			if (!(a = j(this).find('input:first').val()))

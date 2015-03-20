@@ -15,7 +15,10 @@ var MacroPane = function(o) {
 	var first = 1;
 	
 	var init = function() {
-
+		
+		var fav = false;
+		buttons = [];
+		
 		for (g in G) {
 			if (G[g].host == host) {
 				gMacros = G[g].macros;
@@ -25,20 +28,24 @@ var MacroPane = function(o) {
 		
 		if (P && P[param('profile')])
 			pMacros = P[param('profile')].macros;
-		
-		buttons = [];
-		
+
 		if (gMacros) 
-			for (var n = 0; n < gMacros.length; n++)
-				buttons.push(gMacros[n]);
+		for (var n = 0; n < gMacros.length; n++) {
+			buttons.push(gMacros[n]);
+			if (gMacros[n][3])
+				fav = true;
+		}
 
 		if (pMacros)
-			for (var n = 0; n < pMacros.length; n++)
-				buttons.push(pMacros[n]);
+		for (var n = 0; n < pMacros.length; n++) {
+			buttons.push(pMacros[n]);
+			if (pMacros[n][3])
+				fav = true;
+		}
 		
 		socket.echo('Loaded ' + buttons.length + ' macros.');
 		
-		if (!o.noquickbuttons && !Config.nocenter)
+		if (fav && !o.noquickbuttons && !Config.nocenter)
 			pane();
 		
 		first = 0;
