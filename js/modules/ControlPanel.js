@@ -10,7 +10,7 @@ var ControlPanel = function () {
 	var pref, list, g, mobile = Config.device.mobile, touch = Config.device.touch;
 
 	var d = window.sitelist, pref = window.user.pref;
-	
+
 	var tmc, chatlog = [], mychannel, nice, sound = false;
 	
 	if (touch && param('host'))
@@ -20,15 +20,19 @@ var ControlPanel = function () {
 		id: id,
 		title: 'Game Center',
 		noresize: 1,
+		closeable: 0,
 		class: 'nofade',
 		css: {
 			width: 700,
 			height: 500,
-			top: 160,
-			left: 100,
+			top: 0,
+			right: 0,
+			opacity: 1,
 			zIndex: 101
 		}
 	});
+	
+	j(id).get(0).win = win;
 	
 	j(id + ' .content').append('<div style="width: 27%; border-right: 1px solid #222;" class="left gamelist nice"></div>\
 			<div class="left gamepanel" style="width: 72%; height: 100%"></div>')
@@ -438,7 +442,7 @@ var ControlPanel = function () {
 				pref.sitelist[name].macros.push([a, b, c, d]);
 		});
 
-		dump(pref.profiles[profile].macros);
+		//dump(pref.profiles[profile].macros);
 		
 		j(id+' #triggers .scroll div').each(function() {
 			var a, b;
@@ -542,7 +546,7 @@ var ControlPanel = function () {
 	/* begin portal chat */
 	
 	var linkify = function(t) {
-		return t.replace(/([^"'])(http.*:\/\/[^\s\x1b"']+)/g,'$1<a href="$2" target="_blank">$2</a>');
+		return t.replace(/([^"']|^)(http.*:\/\/[^\s\x1b"']+)/g,'$1<a href="$2" target="_blank">$2</a>');
 	}
 
 	var closeChat = function() {
@@ -563,8 +567,11 @@ var ControlPanel = function () {
 		if (mychannel)
 			closeChat();
 
-		j(id + ' .gamepanel').html('<div class="chat-panel"><!--<div class="chat-title right" style="color:#01c8d4;opacity:0.6">'+channel.toUpperCase()+'</div>--><div class="nice chat-main chat-'+channel+'" style="width: 100%; height: 440px"></div>\
-			<div class="input" style="width: 95%;height: 30px;margin-right: 40px; position: absolute; bottom: 6px;"><input class="chat-send send" autocomplete="on" autocapitalize="off" spellcheck="'+(Config.getSetting('spellcheck')?'true':'false')+'" placeholder="type your message..." aria-live="polite"/></div>\</div>');
+		j(id + ' .gamepanel').html('<div class="chat-panel">\
+		<!--<div class="chat-title right" style="color:#01c8d4;opacity:0.6">'+channel.toUpperCase()+'</div>-->\
+		<div class="nice chat-main chat-'+channel+'" style="width: 100%; height: 440px"></div>\
+		<div class="input" style="width: 95%;height: 30px;margin-right: 40px; position: absolute; bottom: 6px;">\
+		<input class="chat-send send" autocomplete="on" autocapitalize="off" spellcheck="'+(Config.getSetting('spellcheck')?'true':'false')+'" placeholder="type your message..." aria-live="polite"/></div>\</div>');
 		
 		nice = j(id + ' .chat-'+channel).niceScroll({ 
 			cursorwidth: 7,
@@ -579,11 +586,7 @@ var ControlPanel = function () {
 		
 		j(id + ' .chat-send').focus();
 	});
-	
-	j(id).on('click', '.chat-main', function() {
-		j(id + ' .chat-send').focus();
-	});
-	
+
 	var chatUpdate = function(i) {
 
 		var c = j('.chat-'+mychannel);
@@ -612,7 +615,7 @@ var ControlPanel = function () {
 			if (j(this).val().length) {
 				chat.send(stringify({
 					chat: 1,
-					name: user.username||'Guest',
+					name: user.username || 'guest',
 					channel: mychannel,
 					msg: j(this).val()
 				}));
@@ -629,7 +632,7 @@ var ControlPanel = function () {
 			
 			chat.send(stringify({
 				chat: 1,
-				name: user.username || 'Guest',
+				name: user.username || 'guest',
 				channel: 'op',
 				msg: 'joined chat.'
 			}));
@@ -652,7 +655,8 @@ var ControlPanel = function () {
 			chatlog = eval('('+value+')');
 			chatUpdate();
 		}
-		else if (key == 'portal.chat') {
+		else 
+		if (key == 'portal.chat') {
 			var i = [new Date().toISOString(), eval('('+value+')')];
 			new Audio('/app/sound/blop.mp3').play();
 			chatlog.push(i);
@@ -666,7 +670,7 @@ var ControlPanel = function () {
 		if (c == chat) {
 			chat.send(stringify({
 				chat: 1,
-				name: user.username||'Guest',
+				name: user.username || 'guest',
 				channel: 'op',
 				msg: 'left chat.'
 			}));
@@ -681,4 +685,8 @@ var ControlPanel = function () {
 	});
 	
 	var chat = new Socket({ type: 'chat' });
+	
+	return {
+		win: win
+	};
 }

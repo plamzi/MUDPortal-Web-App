@@ -8,6 +8,7 @@ var Toolbar = function () {
 		j('#tmp-toolbar').on('click', 'button', function(e) {
 			
 			e.stopPropagation();
+			
 			var t = j(e.target).attr('href');
 			var win = j(t).get(0).win;
 
@@ -29,19 +30,27 @@ var Toolbar = function () {
 
 		Event.listen('window_open', update);
 		Event.listen('window_close', update);
+		Event.listen('window_show', update);
+		Event.listen('window_hide', update);
 		Event.listen('window_front', front);
 		
 		return self;
 	};
 
 	var update = function(a) {
+		
 		j('#tmp-toolbar').empty();
+		
 		j('.window').each(function() {
-			j('#tmp-toolbar').append('<button href="#'+j(this).attr('id')
-			+ '" class="btn kbutton">'
-			+ ( j(this).get(0).win.title() || j(this).attr('id') ) 
-			+ '</button>');
+			
+			j('#tmp-toolbar').append('<button href="#' + j(this).attr('id')
+			+ '" class="btn kbutton">' + ( j(this).get(0).win.title() || j(this).attr('id') )  + '</button>');
+			
+			if (!j(this).is(':visible'))
+				j('#tmp-toolbar .btn:last').addClass('disabled');
 		});
+		
+		return self;
 	};
 
 	var front = function(a) {

@@ -27,7 +27,6 @@ var ScrollView = function(o) {
 		id: id,
 		css: o.css,
 		'class': 'scroll-view nofade',
-		max: 1,
 		master: !Config.notrack,
 		closeable: Config.ControlPanel
 	});
@@ -143,11 +142,14 @@ var ScrollView = function(o) {
 		});
 	}
 	else {
-		j(id + ' .input').append('<a class="kbutton multiline tip" title="Send multiline input." style="height: 16px !important; padding: 4px 8px !important; margin-left: 6px; position: relative; top: 3px;"><i class="icon-align-justify"></i></a>');
+		
+		j(id + ' .input').append('<a class="kbutton multiline tip" title="Send multi-line text." style="height: 16px !important; padding: 4px 8px !important; margin-left: 6px; position: relative; top: 3px;"><i class="icon-align-justify"></i></a>');
 		
 		multi = function(e, text) {
+			
 			var modal = new Modal({
-				title: 'Multiline Input',
+				
+				title: 'Multi-Line Input',
 				text: '<textarea class="multitext" autocorrect="off" autocapitalize="off" spellcheck="'+(Config.getSetting('spellcheck')?'true':'false')+'">'+(text||'')+'</textarea>',
 				closeable: 1,
 				buttons: [
@@ -179,6 +181,7 @@ var ScrollView = function(o) {
 				j('.multitext').focus();
 				//j('#modal').resizable();
 			});
+			
 			if (e)
 				e.stopPropagation();
 			return false;
@@ -204,7 +207,8 @@ var ScrollView = function(o) {
 		railoffset: { top: -2, left: -2 }
 	});
 	
-	j(document).on('mouseup', '.out, .freeze', function() {
+	/*
+	j(id).on('mouseup', '.out, .freeze', function() {
 		var t;
 		if ((t = getSelText())) {
 		
@@ -213,15 +217,14 @@ var ScrollView = function(o) {
 			else
 				j(id + ' .send').val(j(id + ' .send').val()+t);
 		}
-		//else
-			//j(id + ' .send').focus();
 	});
 	
 	if (!Config.device.touch)
-	j(document).on('mouseup', function() {
-		if (!j(':focus').is('input, textarea'))
-			j(id + ' .send').focus();
-	});
+		j(id).on('mouseup', '.out, .freeze', function() {
+			if (!j(':focus').is('input, textarea'))
+				j(id + ' .send').focus();
+		});
+	*/
 	
 	var scroll = function () { j(id + ' .out').scrollTop(j(id + ' .out').prop('scrollHeight')) };
 	
@@ -270,6 +273,7 @@ var ScrollView = function(o) {
 	else {
 		
 		j(id + ' .send').focus(function() {
+			
 			if (!j(this).is(":focus"))
 				j(this).select();
 		});

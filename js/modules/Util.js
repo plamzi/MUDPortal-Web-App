@@ -232,8 +232,8 @@ var dump = function(A) {
 		console.log(stringify(A))
 }
 
-function exists(A) { return (( typeof A != 'undefined' )?A:null) };
-	
+function exists(A) { return ( typeof A != 'undefined' ) ? 1 : 0 };
+
 function addCommas(nStr) {
 	nStr += '';
 x = nStr.split('.');

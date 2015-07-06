@@ -1,9 +1,11 @@
 
-var ModalEditor = function(o) {
+var ModalInput = function(o) {
+	
+	var colorize = new Colorize();
 	
 	var close = function(send) {
 		
-		console.log('ModalEditor close');
+		console.log('ModalInput close');
 		
 		if (send !== true)
 			Config.Socket.write(o.abort);
@@ -13,7 +15,7 @@ var ModalEditor = function(o) {
 		j('.modal .me-second').off();
 		j('.modal').modal('hide');
 	};
-	
+
 	var send = function() {
 		
 		var msg = j('.modal .me-input').val();
@@ -33,6 +35,27 @@ var ModalEditor = function(o) {
 	};
 
 	o.backdrop = o.backdrop || 0;
+	
+	if (o.close && o.close == 1)
+		return close();
+	
+	if (o.mxp) {
+		o.replace = 1;
+		o.mxp = Config.mxp.translate(o.mxp);
+		o.intro = o.intro ? o.mxp + o.intro : o.mxp;
+	}
+	
+	if (o.text)
+		o.text = colorize.strip(o.text).replace(/\r/g, '');
+	
+	if (o.error)
+		o.error = Config.mxp.prep(o.error);
+
+	if (o.info)
+		o.info = Config.mxp.prep(o.info);
+
+	if (o.intro)
+		o.intro = Config.mxp.prep(o.intro);
 	
 	if (o.replace) {
 		if (j('.me-modal').length && j('.me-modal').is(':visible')) {
@@ -54,7 +77,8 @@ var ModalEditor = function(o) {
 				' + (o.info ? '<div class="alert alert-info">' + o.info + '</div>' : '') + '\
 				' + (o.error ? '<div class="alert">' + o.error + '</div>' : '') + '\
 				' + (o.intro ? '<div class="intro">' + o.intro + '</div><br>' : '') + '\
-					<' + (o.tag || 'textarea') + (o.type ? ' type="'+o.type+'" ' : ' ') + 'class="me-input" spellcheck="false" autocapitalize="off" autocorrect="off" \
+					<' + (o.tag || 'textarea') + (o.type ? ' type="' + o.type + '" ' : ' ') + 'class="me-input ' + (o.text ? 'modal-text-content' : '') 
+					+ '" spellcheck="false" autocapitalize="off" autocorrect="off" \
 					placeholder="' + (o.placeholder || '') + '" ' + (o.tag ? 'value="' + (o.text || '') + '"' : '') + '">' + (o.tag ? '' : (o.text || o.html || '')) + (o.tag ? '' : '</textarea>') + '\
 			<br><br></div>\
 			<div class="modal-footer">\
@@ -151,7 +175,7 @@ Event.listen('gmcp', function(d) {
 	try {
 		var o = JSON.parse(d.match(/^[^ ]+ (.*)/)[1]);
 		o.replace = o.gmcp = 1;
-		new ModalEditor(o);
+		new ModalInput(o);
 	}
 	catch(ex) {
 		log(ex);

@@ -13,12 +13,14 @@ var JujuMapper = function(o) {
 		}
 	};
 	
+	o.seeall = o.seeall || param('seeall');
+	
 	if (Config.kong) {
 		o.css.width = 398;
 		o.css.height = 240;
 	}
 	
-	o.loadURL = o.loadURL||'/index.php?option=com_portal&task=get_map&host='+Config.host+'&port='+Config.port;
+	o.loadURL = o.loadURL || '/index.php?option=com_portal&task=get_map&host='+Config.host+'&port='+Config.port;
 	o.saveURL = '/index.php?option=com_portal&task=save_map&host='+Config.host+'&port='+Config.port;
 	
 	var map = {}, areas = {}, rooms = {}, exits = [], tags = [], selection = [];
@@ -269,10 +271,13 @@ var JujuMapper = function(o) {
 	};
 	
 	var seeall = function() {
-		if (!editing())
-			return 0;
+
 		if (o.seeall)
 			return 1;
+			
+		if (!editing())
+			return 0;
+			
 	    return (j(id + ' .reveal').hasClass("on"))
 	};
 	
@@ -384,12 +389,10 @@ var JujuMapper = function(o) {
 		c_rooms = c_map.append("svg:g").attr("id", "rooms");
 		c_tags = c_map.append("svg:g").attr("id", "tags");
 
-		if (j.browser.safari || j.browser.chrome) /* fix for Safari & Chrome scaling */
+		if ('WebkitAppearance' in document.documentElement.style) /* fix for Safari & Chrome (WebKit) scaling */
 			c_map.attr("transform", "scale("+o.scale+")");
 		
 		//myGlow = glow("myGlow").rgb("#aaa").stdDeviation(1);
-		
-		//if (j.browser.safari && !j.browser.chrome)
 		
 		j(o.container)
 		.addClass('nice')

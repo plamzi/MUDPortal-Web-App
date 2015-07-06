@@ -5,7 +5,7 @@
 
 body {
 	outline: 0 none !important;
-	font-family: "Open Sans","Lucida Console","DejaVu Sans",Arial,Helvetica,sans-serif;
+	font-family: "Open Sans","Lucida Console","DejaVu Sans Mono","DejaVu Sans",Arial,Helvetica,sans-serif;
 	font-size: 12px;
 	min-height: 100%;
 	min-width: 100%;
@@ -275,7 +275,7 @@ button.disabled {
 .app #c { clear: both }
 
 .app .out {
-    font-family: "Lucida Console","DejaVu Sans","Open Sans",Arial,Helvetica,sans-serif;
+    font-family: "Lucida Console","DejaVu Sans Mono",FreeMono,"Open Sans",Arial,Helvetica,sans-serif;
 }
 
 .app .out a, .app .freeze a {
@@ -475,8 +475,14 @@ button.disabled {
 	display: inline-block;
 }
 
-.modal.fade.in {
+.modal {
+    left: 50%;
+    margin-left: -280px;
+    outline: 0 none;
+    position: fixed;
     top: 15%;
+    width: 500px;
+    z-index: 1050;
 }
 
 .modal, .modal-footer, .dropdown-menu {
@@ -498,8 +504,8 @@ button.disabled {
 	color: #ddd;
 }
 
-.dropdown-menu {
-	z-index: 1000;
+.modal .alert {
+    padding: 8px 14px 8px 14px;
 }
 
 .modal textarea {
@@ -527,6 +533,16 @@ button.disabled {
 
 .modal .active, .group-member.active {
 	background-color: rgba(255, 255, 255, 0.2);
+}
+
+.modal-text-content {
+    white-space: pre-wrap;
+    word-break: keep-all;
+    font-family: "Lucida Console","DejaVu Sans Mono",FreeMono,"Open Sans",Arial,Helvetica,sans-serif;
+}
+
+.dropdown-menu {
+    z-index: 1000;
 }
 
 .tooltip {
@@ -1133,4 +1149,8 @@ textarea.me-input {
 
 .modal-backdrop, .modal-backdrop.fade.in {
     opacity: 0.7;
+}
+
+.top-a-line #top-a::before, .top-b-line #top-b::before, .main-line #main::before, .bottom-a-line #bottom-a::before, .bottom-b-line #bottom-b::before, .footer-line #footer::before {
+    background: none !important;
 }

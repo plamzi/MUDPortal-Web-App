@@ -1,5 +1,10 @@
 var Window = function(o) {
 	
+	o = o || {
+		id: '#scroll-view',
+		title: 'ScrollView'
+	};
+
 	var id, h, position, width, height, maximized, opt, was_at;
 	var minZ = 100;
 	var view_id = Config.view;
@@ -8,17 +13,12 @@ var Window = function(o) {
 	var save = ( window.user && user.id && Config.host && !Config.kong && !param('gui') && !param('embed') );
 	var handle = !o.handle && !o.transparent;
 	
-	o = o || {
-		id: '#scroll-view',
-		title: 'ScrollView'
-	};
-
 	o.css = o.css || {
 		height: 380,
 		width: 380
 	};
 	
-	o.closeable = o.closeable || drag;
+	o.closeable = exists(o.closeable) ? o.closeable : drag;
 	
 	o.tabs = o.tabs || [];
 	
@@ -62,12 +62,12 @@ var Window = function(o) {
 					
 			j(this).css({
 				height: h,
-				width: w,
+				width: '100%',
 			});
 			
 			j(this).find('.content').css({
 				height: ch,
-				width: w,
+				width: '100%',
 			});
 		});
 		
@@ -86,29 +86,28 @@ var Window = function(o) {
 	}
 	
 	var renice = function() {
-		j(o.id + ' .nice').each(function() {
+		j(id + ' .nice').each(function() {
 			j(this).getNiceScroll().resize();
 		});
 	}
 	
 	var init = function(o) {
-		
+
+		o.id = o.id.start('#') ? o.id : '#' + o.id; 
 		id = o.id;
-		
+
 		log('Window.init: ' + id);
 		
-		var cleanID = id.split('#')[1];
-		
 		j('.app').prepend('\
-			<div id="'+cleanID+'" class="window '+(o['class']||'')+'" >\
+			<div id="'+ id.split('#')[1] +'" class="window '+ ( o['class'] || '' ) + '" >\
 				<div class="content"></div>\
 			</div>\
 		');
 		
 		if (handle) {
-			j(o.id).prepend('\
+			j(id).prepend('\
 			<div class="handle">\
-					<div class="title" style="width: 100%; text-align: center; text-overflow: ellipsis;">'+(o.title||'&nbsp;')+'</div>\
+					<div class="title" style="width: 100%; text-align: center; text-overflow: ellipsis;">' + ( o.title || '&nbsp;' ) + '</div>\
 					<div class="toolbar"></div>\
 			</div>');
 			o.handle = '.handle';
@@ -116,7 +115,7 @@ var Window = function(o) {
 		else 
 			j(id + ' .content').css({ top: 0 });
 		
-		title(o.title||'');
+		title(o.title || '');
 
 		if (o.transparent) {
 			j(id + ' .content').css({
@@ -206,7 +205,9 @@ var Window = function(o) {
 
 		for (var i = 0; i < o.tabs.length; i++)
 			tab(o.tabs[i]);
-					
+		
+		front(0);
+		
 		/* attempt to restore window position and size */
 		var default_pos = getpos(o);
 		
@@ -279,15 +280,19 @@ var Window = function(o) {
 	
 	var show = function() {
 		j(id).show();
+		Event.fire('window_show', id);
 		front();
 		return self;
 	};
 	
 	var hide = function() {
 		j(id).hide();
+		Event.fire('window_hide', id);
+		savepos();
 		return self;
 	};
 	
+	/* this type of collapse is no longer in use. see toolbar & show / hide */
 	var collapse = function() {
 		
 		if (j(id + ' .content').hasClass("hidden")) {
@@ -306,7 +311,7 @@ var Window = function(o) {
 		return false;
 	}
 	
-	var front = function() {
+	var front = function(save) {
 
 		if (j(id).hasClass('nofront'))
 			return;
@@ -352,7 +357,9 @@ var Window = function(o) {
 		
 		log('Window.front(ed): ' + id);
 		Event.fire('window_front', id);
-		savepos();
+		
+		if (save)
+			savepos();
 		
 		return self;
 	}
@@ -396,7 +403,8 @@ var Window = function(o) {
 				width: j(this).width(),
 				height: j(this).height(),
 				zIndex: parseInt(j(this).css('z-index')),
-				collapsed: j(this).find('.content').hasClass('hidden')?1:0
+				opacity: parseFloat(j(this).css('opacity')),
+				collapsed: j(this).is(':visible') ? 0 : 1
 			};
 			
 			//console.log(o);
@@ -462,7 +470,7 @@ var Window = function(o) {
 		delete o.css.right, delete o.css.bottom;
 		
 		if (pref.collapsed)
-			collapse();
+			hide();
 
 		log(stringify(o));
 		
@@ -477,10 +485,10 @@ var Window = function(o) {
 		var i = o.tabs.length;
 		o.tabs.push(t);
 
-		if (!j(o.id + ' .content .tabs').length) {
-			j(o.id + ' .content').prepend('<ul class="tabs nav nav-tabs"></ul><div class="tab-content"></div>');
-			j(o.id + ' .content').css('background-color', 'transparent');
-			j(o.id + ' .tabs:hover').css({ cursor: 'move' });
+		if (!j(id + ' .content .tabs').length) {
+			j(id + ' .content').prepend('<ul class="tabs nav nav-tabs"></ul><div class="tab-content"></div>');
+			j(id + ' .content').css('background-color', 'transparent');
+			j(id + ' .tabs:hover').css({ cursor: 'move' });
 			o.handle = '.nav-tabs';
 			draggable();
 		}
@@ -488,7 +496,7 @@ var Window = function(o) {
 		var html = '<li><a class="kbutton ' + (t.id ? t.id.replace('#', '') : '') + '" data-toggle="tab" href="#tab-'+i+'">'+t.name+'</a></li>';
 		
 		if (!t.after && !t.before)
-			j(o.id + ' .nav-tabs').append(html);
+			j(id + ' .nav-tabs').append(html);
 		else
 		if (t.before)
 			j(html).insertBefore(j(o.id + ' .nav-tabs a:contains("'+t.before+'")').parent());
@@ -525,10 +533,13 @@ var Window = function(o) {
 			zIndex: 'inherit',
 			borderWidth: 0
 		});
+
+		j(t.id).removeClass('window');
 		
 		var w = j(t.id).get(0).win;
 		w.draggable(0);
 		w.resize();
+		w.show();
 		
 		j(t.id).find('.icon-remove').remove();
 		

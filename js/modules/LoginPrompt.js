@@ -141,16 +141,16 @@ var LoginPrompt = function(o) {
 
 		if (!o.gmcp)
 			note = '<div class="error alert" style="display:none"></div>';
-		
-		o.text = '\
-		<div id="'+id.split('#')[1]+'" class="login-prompt">\
+
+		o.html = '\
+		<div id="'+id.split('#')[1]+'" class="login-prompt" style="width: 100%">\
 			<div style="width: 100%; margin-top: 24px;">\
 			' + note + '\
 			<div class="left" style="margin: 0px; opacity: 0.6; padding: 0px 40px 0px 0px">\
 				<img style="width: 90px;" src="/app/images/login.png"></div>\
 				<div class="left" style="width: 200px">\
 					<form id="havoc-login-prompt" action="havoc/login">\
-					<input name="username" class="user right" type="text" tabindex="1" autocapitalize="off" autocorrect="off" size=18 placeholder="'+(o.placeholder||'')+'">\
+					<input name="username" class="user right" type="text" tabindex="1" autocapitalize="off" autocorrect="off" size=18 placeholder="' + (o.placeholder || '') + '">\
 					<br><br>\
 					<input name="password" class="pass right" type="password" tabindex="2" autocapitalize="off" autocorrect="off" size=18 placeholder="password">\
 					</form>\
@@ -182,7 +182,7 @@ var LoginPrompt = function(o) {
 
 		var onOpen = function() {
 		
-			j(id + ' .user').on('keydown', function(e) {
+			j(id + ' .user').focus().on('keydown', function(e) {
 				if (e.which == 13) {
 					if (!param('havoc') && !j(id+' .pass').val().length)
 						j(id+' .pass').focus();
@@ -209,10 +209,6 @@ var LoginPrompt = function(o) {
 		j('body').on('hide.bs.modal', onClose);
 
 		new Modal(o);
-		
-		setTimeout(function() {
-	    	j(id + ' .user').focus();
-		}, 500);
 	};
 	
 	if (o.gmcp)

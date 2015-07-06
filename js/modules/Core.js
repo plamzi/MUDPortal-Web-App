@@ -1,18 +1,12 @@
 if (typeof WebSocket == 'undefined') {
 	new Modal({
 	    title:'Incompatible Browser',
-	    text: 'The portal web app requires a modern browser. If you are using an older Internet Explorer version, we recommend installing <a target="_blank" href="http://www.google.com/chromeframe/">the Chrome Frame IE add-on from Google</a>. Or simply install Chrome or Firefox.',
+	    html: 'The portal web app requires a modern browser. If you are using an older Internet Explorer version, we recommend installing <a target="_blank" href="http://www.google.com/chromeframe/">the Chrome Frame IE add-on from Google</a>. Or simply install Chrome or Firefox.',
 	    closeText: 'Dismiss'
     });
 } 
 
-if (j.browser.ie && j.browser.version < 10) {
-	new Modal({
-	    title:'Browser Warning',
-	    text: 'Some app functionality may not work properly in Internet Explorer prior to IE10. If you wish to use this browser, we recommend installing <a target="_blank" href="http://www.google.com/chromeframe/">the Chrome Frame IE add-on from Google</a>. Or simply install Chrome or Firefox.',
-	    closeText: 'Dismiss'
-    });
-}
+j('body').addClass('app');
 
 if (Config.socket)
 	window.onbeforeunload = function () {
@@ -71,8 +65,7 @@ if (!Config.nocore) {
 		});
 
 		if (!Config.embed && !Config.device.mobile && !Config.kong) {
-			Config.Toolbar = new Toolbar().init();
-			Config.Toolbar.update();
+			Config.Toolbar = new Toolbar().init().update();
 		}
 	}
 	
@@ -84,6 +77,10 @@ if (!Config.nocore) {
 	if (Config.kong)
 		Config.ScrollView.title('Bedlam');
 }
+
+j(document).on('click', 'a[data-toggle="tab"]', function(e) {
+	j(this).find('.badge').remove();
+});
 
 if (!Config.device.touch)
 	j('body').tooltip({ 

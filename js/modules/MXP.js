@@ -13,6 +13,7 @@ var MXP = function () {
 		t = new Colorize()
 			.process(t)
 			.replace(/\x1b\[[1-7]z/g, '')
+			.replace(/\r/g,'')
 			.replace(/\n/g,'<br>');
 			
 		t = t.replace(/\x1b>/g,'>');
@@ -316,7 +317,7 @@ var MXP = function () {
 					var my = j('.tab-'+n + ' .content').length ? j('.tab-'+n + ' .content') : j('.tab-'+n);
 					
 					my.append(msg);
-					my.parent().parent().find('a[href="#'+j(my).attr('id')+'"]').tab('show');
+					//my.parent().parent().find('a[href="#'+j(my).attr('id')+'"]').tab('show');
 					
 					if (my.hasClass('nice')) {
 						my.getNiceScroll().resize();
@@ -419,6 +420,7 @@ var MXP = function () {
 	});
 	
 	return {
+		prep: prep,
 		process: process,
 		translate: translate,
 		enabled: function() { 

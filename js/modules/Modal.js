@@ -18,13 +18,42 @@ var Modal = function(o) {
 	
 	var init = function() {
 		
+		if (o.close && o.close == 1)
+			return j('.modal').modal('hide');
+		
+		if (o.mxp) {
+			o.replace = 1;
+			o.mxp = Config.mxp.translate(o.mxp);
+			o.text = o.text ? o.mxp + o.text : o.mxp;
+		}
+		
+		if (o.text)
+			o.text = Config.mxp.prep(o.text);
+		
+		if (o.error)
+			o.error = Config.mxp.prep(o.error);
+
+		if (o.info)
+			o.info = Config.mxp.prep(o.info);
+		
+		if (exists(o.monospace) && !o.monospace) {
+			o.html = o.text;
+			delete o.text;
+			log('monospace option is false');
+		}
+		
+		/* try to update the contents of an already existing modal */
 		if (o.replace) {
+			
 			if (j('.modal-plain').length && j('.modal').is(':visible')) {
+				
 				log('modal (simple) found in replace mode');
 				j('.modal h3').html(o.title);
 				j('.modal .modal-body').html(o.text || o.html);
+				
 				buttons();
 				links();
+				
 				return;
 			}
 		}
@@ -40,7 +69,7 @@ var Modal = function(o) {
 				<div class="modal-body">\
 				' + (o.info ? '<div class="alert alert-info">' + o.info + '</div>' : '') + '\
 				' + (o.error ? '<div class="alert">' + o.error + '</div>' : '') + '\
-				' + (o.text || o.html) + '\
+				' + (o.text ? '<div class="modal-text-content">' + o.text + '</div>' : o.html) + '\
 				<br><br></div>\
 				<div class="modal-footer">\
 					<button class="btn btn-primary kbutton dismiss mo-dismiss">OK</button>\
@@ -138,38 +167,27 @@ var Modal = function(o) {
 }
 
 j('body').on('shown.bs.modal', function() {
+	
 	j('.modal .modal-body').niceScroll({ cursorborder: 'none', cursorwidth: 7 });
 });
 
 j('body').on('hide.bs.modal', function() {
-		j('.modal .modal-body').niceScroll('destroy');
-		j('.modal a, .modal button').off('click');
-		j('.modal input, .modal textarea').off('keywdown');
+	
+	j('.modal .modal-body').niceScroll('destroy');
+	j('.modal a, .modal button').off('click');
+	j('.modal input, .modal textarea').off('keywdown');
 	j('.modal, .modal-backdrop').remove();
 });
 
 Event.listen('gmcp', function(d) {
 
-	if (!d || !d.start)
+	if (!d || !d.start || !d.start('Modal '))
 		return d;
 
-	if (!d.start('Modal '))
-		return d;
-
-	log('Modal detected gmcp trigger');
+	log('Modal: gmcp trigger');
 
 	try {
-		
 		var o = JSON.parse(d.match(/^[^ ]+ (.*)/)[1]);
-
-		if (o.close && o.close == 1)
-			return j('.modal').modal('hide');
-		
-		if (o.mxp) {
-			o.text = Config.mxp.translate(o.mxp);
-			o.replace = o.gmcp = 1;
-		}
-
 		new Modal(o);
 	}
 	catch(ex) {

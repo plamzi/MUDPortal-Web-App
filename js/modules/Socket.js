@@ -180,6 +180,13 @@ var Socket = function(o) {
 			msg = msg.replace(re, '\r\n');
 		}
 		
+		/*
+		try {
+			msg = decodeURIComponent(escape(msg));
+			msg = unescape(encodeURIComponent(msg));
+		} catch(ex) {}
+		*/
+		
 		log('Socket.send: ' + msg);
 		
 		if (ws.send && connected) {
@@ -431,8 +438,8 @@ var Socket = function(o) {
 
 		//console.log('before_display: '+t);
 
-		//t = t.replace(/\r/g,'');
-		//t = t.replace(/\n/g,'\r\n');
+		t = t.replace(/\n\r/g,'\n');
+		t = t.replace(/\r\n/g,'\n');
 		
 		t = Event.fire('before_display', t);
 

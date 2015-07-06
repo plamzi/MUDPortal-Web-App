@@ -10,7 +10,7 @@ var Config = {
 	
 	profile: param('profile'),
 
-	width: param('width') || 860,
+	width: param('width') || 800,
 
 	height: param('height') || j(window).height() - 80,
 	

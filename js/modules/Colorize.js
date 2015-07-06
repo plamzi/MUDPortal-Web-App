@@ -25,7 +25,7 @@ var Colorize = function (o) {
 		'1;36':		'#5bedf6', //bright cyan
 		'37':		'#dbdbdb', //off-white
 		'1;37':		'#fff; font-weight: bold',	  //bright white
-		'39': 		'#dbdbdb'  //default
+		'39': 		'#dbdbdb',  //default
 	},
 	
 	bgansi = {
@@ -106,8 +106,9 @@ var Colorize = function (o) {
 			//log(c);
 			
 			for (var a = 0; a < c.length; a++) {
+				
 				if (c[a] == '1')
-					bold = 1;
+					bold = ' font-weight: bold;';
 				else
 				if (c[a] == '3')
 					italic = ' font-style: italic;';
@@ -149,7 +150,7 @@ var Colorize = function (o) {
 				v += '</span>';
 			
 			if (color || bgcolor || bold || italic)
-				v += '<span style="'+color+bgcolor+italic+'">';
+				v += '<span style="' + color + bgcolor + bold + italic + '">';
 			
 			//log(v);
 			
@@ -181,7 +182,8 @@ var Colorize = function (o) {
 	}
 	
 	return {
-		process: process
+		process: process,
+		strip: stripANSI
 	}
 	
 }
